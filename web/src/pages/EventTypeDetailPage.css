@@ -1,21 +1,91 @@
-.cal-event-detail {
+.cal-event-editor {
+  display: grid;
+  grid-template-columns: 232px minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+  padding-bottom: 72px;
+}
+
+.cal-event-editor__rail {
+  position: sticky;
+  top: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px;
+  border: 1px solid var(--cal-border-subtle);
+  border-radius: var(--cal-radius-lg);
+  background: var(--cal-bg);
+}
+
+.cal-event-editor__tab {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 9px 10px;
+  border: 0;
+  border-radius: var(--cal-radius-sm);
+  background: transparent;
+  color: var(--cal-text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.cal-event-editor__tab:hover {
+  background: var(--cal-bg-muted);
+}
+
+.cal-event-editor__tab.is-active {
+  background: var(--cal-bg-emphasis);
+  color: var(--cal-text-emphasis);
+}
+
+.cal-event-editor__tab > span {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.cal-event-editor__tab-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--cal-text-emphasis);
+}
+
+.cal-event-editor__tab-hint {
+  font-size: 11px;
+  color: var(--cal-text-subtle);
+}
+
+.cal-event-editor__panel {
   display: flex;
   flex-direction: column;
   gap: 16px;
-  padding-top: 16px;
+  min-width: 0;
+}
+
+.cal-event-editor__bar {
+  position: sticky;
+  bottom: 16px;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: -56px;
+  padding: 10px 14px;
+  border: 1px solid var(--cal-border);
+  border-radius: var(--cal-radius-lg);
+  background: var(--cal-bg);
+  box-shadow: var(--cal-shadow-drop);
+  font-size: 13px;
+  color: var(--cal-text-emphasis);
 }
 
 .cal-limit-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 12px;
-}
-
-.cal-location-row {
-  display: grid;
-  grid-template-columns: minmax(180px, 240px) minmax(0, 1fr) auto;
-  align-items: end;
-  gap: 8px;
 }
 
 .cal-schedule-preview {
@@ -32,28 +102,6 @@
   display: flex;
   justify-content: space-between;
   font-size: 13px;
-}
-
-.cal-booking-field {
-  border: 1px solid var(--cal-border-subtle);
-  border-radius: var(--cal-radius);
-  padding: 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.cal-booking-field__head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 10px;
-}
-
-.cal-booking-field__body {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 10px;
 }
 
 .cal-private-link {
@@ -88,8 +136,21 @@
   gap: 8px;
 }
 
-@media (max-width: 720px) {
-  .cal-location-row,
+@media (max-width: 900px) {
+  .cal-event-editor {
+    grid-template-columns: 1fr;
+  }
+
+  .cal-event-editor__rail {
+    position: static;
+    flex-direction: row;
+    overflow-x: auto;
+  }
+
+  .cal-event-editor__tab-hint {
+    display: none;
+  }
+
   .cal-host-row {
     grid-template-columns: 1fr;
   }

@@ -1,4 +1,8 @@
-.cal-event-types__scope {
+.cal-event-types__teams {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
   margin-bottom: 14px;
 }
 

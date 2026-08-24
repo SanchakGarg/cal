@@ -154,7 +154,7 @@ async function main(): Promise<void> {
           event.slug,
           event.length,
           event.type,
-          JSON.stringify([{ type: "integration", integration: "cal-video" }]),
+          JSON.stringify([{ type: "link", link: "https://meet.example.com/acme-sales", public: true }]),
         ]
       );
       console.log(`+ team event ${event.slug} (${event.type})`);
@@ -183,7 +183,7 @@ async function main(): Promise<void> {
       const uid = randomUUID();
       const booking = await queryOne<{ id: number }>(
         `INSERT INTO bookings (uid, event_type_id, user_id, title, start_time, end_time, status, location, ics_uid)
-         VALUES ($1, $2, $3, $4, $5, $6, 'accepted', 'cal-video', $7) RETURNING id`,
+         VALUES ($1, $2, $3, $4, $5, $6, 'accepted', 'https://meet.example.com/acme-sales', $7) RETURNING id`,
         [
           uid,
           aliceEvent.id,

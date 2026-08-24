@@ -104,6 +104,11 @@
   gap: 12px;
 }
 
+.cal-overrides__saving {
+  font-size: 12px;
+  color: var(--cal-text-subtle);
+}
+
 .cal-overrides__list {
   display: flex;
   flex-direction: column;

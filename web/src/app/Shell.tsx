@@ -20,7 +20,6 @@ const NAV: NavItem[] = [
   { label: "Bookings", href: "/bookings/upcoming", icon: "calendar", match: ["/bookings"] },
   { label: "Availability", href: "/availability", icon: "clock", match: ["/availability"] },
   { label: "Teams", href: "/teams", icon: "users", match: ["/teams"] },
-  { label: "Insights", href: "/insights", icon: "grid", match: ["/insights"] },
 ];
 
 export function Shell({ children, wide = false }: { children: ReactNode; wide?: boolean }) {

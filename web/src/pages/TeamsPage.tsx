@@ -119,14 +119,21 @@ export function TeamsPage() {
       ) : (
         <List>
           {teams.map((team) => (
-            <ListRow key={team.id} onClick={() => navigate(`/teams/${team.id}/members`)}>
+            <ListRow key={team.id} onClick={() => navigate(`/teams/${team.id}/dashboard`)}>
               <Avatar name={team.name} src={team.logoUrl} size={30} />
               <div style={{ flex: 1 }}>
                 <strong>{team.name}</strong>
                 <p className="cal-hint">/team/{team.slug}</p>
               </div>
               {team.parentId ? <Badge>In organization</Badge> : null}
-              <Button size="sm" variant="secondary" onClick={() => navigate(`/event-types?team=${team.id}`)}>
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  navigate(`/teams/${team.id}/event-types`);
+                }}
+              >
                 Event types
               </Button>
             </ListRow>

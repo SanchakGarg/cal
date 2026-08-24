@@ -254,9 +254,17 @@ interface OverrideListProps {
   timeFormat: 12 | 24;
   timeZone: string;
   onChange: (overrides: OverrideEntry[]) => void;
+  /** True while the parent is persisting a change (overrides save immediately). */
+  saving?: boolean;
 }
 
-export function DateOverrideList({ overrides, timeFormat, timeZone, onChange }: OverrideListProps) {
+export function DateOverrideList({
+  overrides,
+  timeFormat,
+  timeZone,
+  onChange,
+  saving = false,
+}: OverrideListProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const byDate = new Map<string, OverrideEntry[]>();
   for (const override of overrides) {
@@ -269,8 +277,11 @@ export function DateOverrideList({ overrides, timeFormat, timeZone, onChange }: 
       <div className="cal-overrides__head">
         <div>
           <p className="cal-section-title">Date overrides</p>
-          <p className="cal-hint">Change your hours or block a specific date.</p>
+          <p className="cal-hint">
+            Change your hours or block a specific date. Saved as soon as you add one.
+          </p>
         </div>
+        {saving ? <span className="cal-overrides__saving">Saving…</span> : null}
       </div>
 
       <div className="cal-overrides__list">

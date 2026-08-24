@@ -17,7 +17,7 @@ import { OnboardingPage } from "./pages/OnboardingPage.tsx";
 import { OrganizationPage } from "./pages/OrganizationPage.tsx";
 import { ProfilePage } from "./pages/ProfilePage.tsx";
 import { SettingsPage } from "./pages/SettingsPages.tsx";
-import { TeamMembersPage } from "./pages/TeamMembersPage.tsx";
+import { TeamPage, type TeamTab } from "./pages/TeamPage.tsx";
 import { TeamsPage } from "./pages/TeamsPage.tsx";
 import { TroubleshootPage } from "./pages/TroubleshootPage.tsx";
 
@@ -31,7 +31,7 @@ export function App() {
   const { me, loading } = useAuth();
 
   const isAppRoute =
-    ["/event-types", "/bookings", "/availability", "/teams", "/settings", "/insights", "/getting-started"].some(
+    ["/event-types", "/bookings", "/availability", "/teams", "/settings", "/getting-started"].some(
       (prefix) => path === prefix || path.startsWith(`${prefix}/`)
     );
 
@@ -134,11 +134,36 @@ export function App() {
         </Shell>
       );
     }
-    const teamMembers = matchPath("/teams/:id/members", path);
-    if (teamMembers) {
+    // Team event types are edited inside the team, not in the personal list.
+    const teamEventType = matchPath("/teams/:id/event-types/:eventTypeId", path);
+    if (teamEventType) {
       return (
         <Shell>
-          <TeamMembersPage teamId={Number(teamMembers.params.id)} />
+          <EventTypeDetailPage
+            eventTypeId={Number(teamEventType.params.eventTypeId)}
+            teamId={Number(teamEventType.params.id)}
+          />
+        </Shell>
+      );
+    }
+    const teamSection = matchPath("/teams/:id/:tab", path);
+    if (teamSection) {
+      const tab = (["dashboard", "event-types", "members", "availability"] as TeamTab[]).includes(
+        teamSection.params.tab as TeamTab
+      )
+        ? (teamSection.params.tab as TeamTab)
+        : "dashboard";
+      return (
+        <Shell>
+          <TeamPage teamId={Number(teamSection.params.id)} tab={tab} />
+        </Shell>
+      );
+    }
+    const teamRoot = matchPath("/teams/:id", path);
+    if (teamRoot) {
+      return (
+        <Shell>
+          <TeamPage teamId={Number(teamRoot.params.id)} tab="dashboard" />
         </Shell>
       );
     }
@@ -157,13 +182,6 @@ export function App() {
       return (
         <Shell>
           <SettingsPage tab={tab} />
-        </Shell>
-      );
-    }
-    if (path === "/insights") {
-      return (
-        <Shell>
-          <InsightsPlaceholder />
         </Shell>
       );
     }
@@ -204,15 +222,6 @@ function RootRedirect() {
     navigate(me ? "/event-types" : "/auth/login", { replace: true });
   }, [me, loading, navigate]);
   return null;
-}
-
-function InsightsPlaceholder() {
-  return (
-    <div style={{ paddingTop: 40 }}>
-      <h1>Insights</h1>
-      <p className="cal-muted">Booking analytics are not part of this build.</p>
-    </div>
-  );
 }
 
 function PrivateLinkBooker({ linkId }: { linkId: string }) {

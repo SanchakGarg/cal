@@ -79,6 +79,8 @@ const LOCATION_TYPES = [
   "organizersDefaultApp",
 ] as const;
 
+// Accepted for cal.com API compatibility only — this build ships no video provider,
+// so the UI offers links, addresses and phone locations instead.
 const INTEGRATIONS = ["cal-video", "google-meet", "zoom", "office365-video", "jitsi"] as const;
 
 const BOOKING_FIELD_TYPES = [

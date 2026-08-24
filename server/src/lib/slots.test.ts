@@ -301,3 +301,59 @@ test("isSlotBookable validates a single instant", () => {
   assert.equal(isSlotBookable([host()], ms(`${MONDAY}T08:00:00Z`), options), null);
   assert.equal(isSlotBookable([host()], ms(`${MONDAY}T09:15:00Z`), options), null);
 });
+
+test("a booking taken elsewhere blocks the host on every event type", () => {
+  // busy[] is loaded per user across all their bookings, so a personal booking
+  // removes the same window from team events (and vice versa).
+  const busyHost = host({
+    busy: [{ start: ms(`${MONDAY}T11:00:00Z`), end: ms(`${MONDAY}T12:00:00Z`) }],
+  });
+  const slots = generateSlots([busyHost], {
+    from: ms(`${MONDAY}T00:00:00Z`),
+    to: ms(`${MONDAY}T23:59:00Z`),
+    durationMinutes: 60,
+    minimumBookingNotice: 0,
+    now,
+  });
+  assert.ok(!starts(slots).includes(`${MONDAY}T11:00:00.000Z`));
+  assert.ok(starts(slots).includes(`${MONDAY}T10:00:00.000Z`));
+  assert.ok(starts(slots).includes(`${MONDAY}T12:00:00.000Z`));
+});
+
+test("one busy host removes the slot from a collective event", () => {
+  const alice = host({ userId: 1 });
+  const bob = host({
+    userId: 2,
+    busy: [{ start: ms(`${MONDAY}T14:00:00Z`), end: ms(`${MONDAY}T15:00:00Z`) }],
+  });
+  const slots = generateSlots([alice, bob], {
+    from: ms(`${MONDAY}T00:00:00Z`),
+    to: ms(`${MONDAY}T23:59:00Z`),
+    durationMinutes: 60,
+    minimumBookingNotice: 0,
+    schedulingType: "collective",
+    now,
+  });
+  assert.ok(!starts(slots).includes(`${MONDAY}T14:00:00.000Z`));
+  assert.ok(starts(slots).includes(`${MONDAY}T13:00:00.000Z`));
+});
+
+test("round robin keeps a slot but drops the busy host from its candidates", () => {
+  const alice = host({ userId: 1 });
+  const bob = host({
+    userId: 2,
+    busy: [{ start: ms(`${MONDAY}T14:00:00Z`), end: ms(`${MONDAY}T15:00:00Z`) }],
+  });
+  const slots = generateSlots([alice, bob], {
+    from: ms(`${MONDAY}T00:00:00Z`),
+    to: ms(`${MONDAY}T23:59:00Z`),
+    durationMinutes: 60,
+    minimumBookingNotice: 0,
+    schedulingType: "roundRobin",
+    now,
+  });
+  const contested = slots.find((slot) => new Date(slot.start).toISOString() === `${MONDAY}T14:00:00.000Z`);
+  assert.deepEqual(contested?.hostIds, [1]);
+  const free = slots.find((slot) => new Date(slot.start).toISOString() === `${MONDAY}T13:00:00.000Z`);
+  assert.deepEqual(free?.hostIds, [1, 2]);
+});

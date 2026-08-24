@@ -32,6 +32,7 @@ export function AvailabilityDetailPage({ scheduleId }: { scheduleId: number }) {
   const [week, setWeek] = useState<WeeklySchedule | null>(null);
   const [overrides, setOverrides] = useState<OverrideEntry[]>([]);
   const [saving, setSaving] = useState(false);
+  const [savingOverrides, setSavingOverrides] = useState(false);
 
   useEffect(() => {
     void api
@@ -47,6 +48,22 @@ export function AvailabilityDetailPage({ scheduleId }: { scheduleId: number }) {
       .catch((error) => toast.error(errorMessage(error)));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scheduleId]);
+
+  /** Overrides save the moment they change — no Save press needed. */
+  const commitOverrides = async (next: OverrideEntry[]): Promise<void> => {
+    const previous = overrides;
+    setOverrides(next);
+    setSavingOverrides(true);
+    try {
+      await api.patch<Schedule>(`/v2/schedules/${scheduleId}`, { overrides: next });
+      toast.success(next.length > previous.length ? "Override added" : "Overrides updated");
+    } catch (error) {
+      setOverrides(previous);
+      toast.error(errorMessage(error));
+    } finally {
+      setSavingOverrides(false);
+    }
+  };
 
   const save = async (): Promise<void> => {
     if (!week) return;
@@ -121,9 +138,10 @@ export function AvailabilityDetailPage({ scheduleId }: { scheduleId: number }) {
           <div className="cal-card cal-availability__panel">
             <DateOverrideList
               overrides={overrides}
-              onChange={setOverrides}
+              onChange={(next) => void commitOverrides(next)}
               timeFormat={timeFormat}
               timeZone={timeZone}
+              saving={savingOverrides}
             />
           </div>
         </aside>

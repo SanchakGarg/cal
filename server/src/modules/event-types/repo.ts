@@ -118,7 +118,9 @@ export async function createEventType(options: CreateOptions): Promise<EventType
     columns.booking_fields = JSON.stringify(DEFAULT_BOOKING_FIELDS);
   }
   if (columns.locations === undefined) {
-    columns.locations = JSON.stringify([{ type: "integration", integration: "cal-video" }]);
+    // No location by default: bookers see "to be confirmed" until one is set. We do
+    // not ship a video provider, so pretending otherwise would be a lie.
+    columns.locations = JSON.stringify([]);
   }
 
   const names = ["owner_id", "team_id", ...Object.keys(columns)];

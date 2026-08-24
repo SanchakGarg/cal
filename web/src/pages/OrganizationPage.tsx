@@ -206,7 +206,7 @@ export function OrganizationPage({ tab }: { tab: OrgTab }) {
             {teams.map((team) => {
               const count = memberships.filter((membership) => membership.teamId === team.id).length;
               return (
-                <ListRow key={team.id} onClick={() => navigate(`/teams/${team.id}/members`)}>
+                <ListRow key={team.id} onClick={() => navigate(`/teams/${team.id}/dashboard`)}>
                   <Avatar name={team.name} src={team.logoUrl} size={30} />
                   <div style={{ flex: 1 }}>
                     <strong>{team.name}</strong>

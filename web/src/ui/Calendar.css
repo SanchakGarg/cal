@@ -79,10 +79,31 @@
   cursor: not-allowed;
 }
 
+.cal-calendar__day {
+  position: relative;
+}
+
 .cal-calendar__day.has-slots {
   background: var(--cal-bg-muted);
   color: var(--cal-text-emphasis);
   cursor: pointer;
+}
+
+/* Small dot marks the days that actually have slots. */
+.cal-calendar__day.has-slots::after {
+  content: "";
+  position: absolute;
+  bottom: 5px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--cal-text-subtle);
+}
+
+.cal-calendar__day.is-selected::after {
+  background: var(--cal-brand-text);
 }
 
 .cal-calendar__day.has-slots:hover {

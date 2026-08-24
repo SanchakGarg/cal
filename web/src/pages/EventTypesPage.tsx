@@ -3,7 +3,7 @@ import { Button, IconButton } from "../ui/Button.tsx";
 import { CopyButton } from "../ui/CopyButton.tsx";
 import { ConfirmDialog, Dialog } from "../ui/Dialog.tsx";
 import { TextArea, TextField } from "../ui/Field.tsx";
-import { Badge, EmptyState, List, ListRow, PageHeader, Skeleton, Tabs } from "../ui/Layout.tsx";
+import { Badge, EmptyState, List, ListRow, PageHeader, Skeleton } from "../ui/Layout.tsx";
 import { NumberField } from "../ui/Field.tsx";
 import { DropdownMenu, Popover } from "../ui/Popover.tsx";
 import { Switch } from "../ui/Switch.tsx";
@@ -20,11 +20,10 @@ const slugify = (value: string): string =>
 
 export function EventTypesPage() {
   const { me } = useAuth();
-  const { navigate, search } = useRouter();
+  const { navigate } = useRouter();
   const toast = useToast();
 
   const [teams, setTeams] = useState<Team[]>([]);
-  const [scope, setScope] = useState<string>(search.get("team") ?? "personal");
   const [eventTypes, setEventTypes] = useState<EventType[] | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [title, setTitle] = useState("");
@@ -37,8 +36,7 @@ export function EventTypesPage() {
   const load = async (): Promise<void> => {
     setEventTypes(null);
     try {
-      const path = scope === "personal" ? "/v2/event-types" : `/v2/teams/${scope}/event-types`;
-      setEventTypes(await api.get<EventType[]>(path));
+      setEventTypes(await api.get<EventType[]>("/v2/event-types"));
     } catch (error) {
       toast.error(errorMessage(error));
       setEventTypes([]);
@@ -52,20 +50,17 @@ export function EventTypesPage() {
   useEffect(() => {
     void load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [scope]);
+  }, []);
 
   const create = async (): Promise<void> => {
     setSaving(true);
     try {
-      const body: Record<string, unknown> = {
+      const created = await api.post<EventType>("/v2/event-types", {
         title,
         slug: slug || slugify(title),
         lengthInMinutes: duration === "" ? 15 : duration,
         description,
-      };
-      if (scope !== "personal") body.schedulingType = "collective";
-      const path = scope === "personal" ? "/v2/event-types" : `/v2/teams/${scope}/event-types`;
-      const created = await api.post<EventType>(path, body);
+      });
       setCreateOpen(false);
       setTitle("");
       setSlug("");
@@ -80,11 +75,9 @@ export function EventTypesPage() {
 
   const toggleHidden = async (eventType: EventType): Promise<void> => {
     try {
-      const path =
-        scope === "personal"
-          ? `/v2/event-types/${eventType.id}`
-          : `/v2/teams/${scope}/event-types/${eventType.id}`;
-      const updated = await api.patch<EventType>(path, { hidden: !eventType.hidden });
+      const updated = await api.patch<EventType>(`/v2/event-types/${eventType.id}`, {
+        hidden: !eventType.hidden,
+      });
       setEventTypes((current) =>
         (current ?? []).map((item) => (item.id === updated.id ? updated : item))
       );
@@ -95,13 +88,11 @@ export function EventTypesPage() {
 
   const duplicate = async (eventType: EventType): Promise<void> => {
     try {
-      const path = scope === "personal" ? "/v2/event-types" : `/v2/teams/${scope}/event-types`;
-      await api.post<EventType>(path, {
+      await api.post<EventType>("/v2/event-types", {
         title: `${eventType.title} (copy)`,
         slug: `${eventType.slug}-copy`,
         lengthInMinutes: eventType.lengthInMinutes,
         description: eventType.description,
-        ...(scope === "personal" ? {} : { schedulingType: eventType.schedulingType ?? "collective" }),
       });
       toast.success("Event type duplicated");
       await load();
@@ -113,11 +104,7 @@ export function EventTypesPage() {
   const remove = async (): Promise<void> => {
     if (!deleteTarget) return;
     try {
-      const path =
-        scope === "personal"
-          ? `/v2/event-types/${deleteTarget.id}`
-          : `/v2/teams/${scope}/event-types/${deleteTarget.id}`;
-      await api.delete(path);
+      await api.delete(`/v2/event-types/${deleteTarget.id}`);
       toast.success("Event type deleted");
       setDeleteTarget(null);
       await load();
@@ -127,13 +114,8 @@ export function EventTypesPage() {
   };
 
   const publicBase = `${window.location.origin}`;
-  const linkFor = (eventType: EventType): string => {
-    if (eventType.teamId) {
-      const team = teams.find((candidate) => candidate.id === eventType.teamId);
-      return `${publicBase}/team/${team?.slug ?? eventType.teamId}/${eventType.slug}`;
-    }
-    return `${publicBase}/${me?.username ?? ""}/${eventType.slug}`;
-  };
+  const linkFor = (eventType: EventType): string =>
+    `${publicBase}/${me?.username ?? ""}/${eventType.slug}`;
 
   return (
     <>
@@ -148,16 +130,19 @@ export function EventTypesPage() {
       />
 
       {teams.length > 0 ? (
-        <div className="cal-event-types__scope">
-          <Tabs
-            variant="pill"
-            value={scope}
-            onChange={(value) => setScope(value)}
-            tabs={[
-              { value: "personal", label: me?.name ?? "Personal" },
-              ...teams.map((team) => ({ value: String(team.id), label: team.name })),
-            ]}
-          />
+        <div className="cal-event-types__teams">
+          <span className="cal-hint">Team events live on the team:</span>
+          {teams.map((team) => (
+            <Button
+              key={team.id}
+              size="sm"
+              variant="secondary"
+              startIcon="users"
+              onClick={() => navigate(`/teams/${team.id}/event-types`)}
+            >
+              {team.name}
+            </Button>
+          ))}
         </div>
       ) : null}
 
@@ -188,16 +173,9 @@ export function EventTypesPage() {
                 <div className="cal-row">
                   <strong>{eventType.title}</strong>
                   {eventType.hidden ? <Badge startIcon="eyeOff">Hidden</Badge> : null}
-                  {eventType.schedulingType ? (
-                    <Badge tone="info">
-                      {eventType.schedulingType === "roundRobin" ? "Round robin" : eventType.schedulingType}
-                    </Badge>
-                  ) : null}
                 </div>
                 <p className="cal-hint">
-                  /{eventType.teamId ? "team" : me?.username}
-                  {eventType.teamId ? `/${teams.find((team) => team.id === eventType.teamId)?.slug ?? ""}` : ""}/
-                  {eventType.slug}
+                  /{me?.username}/{eventType.slug}
                 </p>
                 {eventType.description ? <p className="cal-hint">{eventType.description}</p> : null}
                 <div className="cal-row cal-event-type__badges">

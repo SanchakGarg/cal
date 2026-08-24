@@ -119,6 +119,8 @@ export async function loadHostSchedules(
        WHERE user_id = ANY($1::int[]) AND end_date >= $2::date AND start_date <= $3::date`,
       [userIds, isoDate(from), isoDate(to)]
     ),
+    // Busy time is collected per user across EVERY event type they host, so a
+    // personal booking blocks their team slots and vice versa.
     query<BusyRow>(
       `SELECT h.user_id, b.start_time, b.end_time
        FROM bookings b

@@ -25,6 +25,7 @@ import {
 } from "../event-types/repo.ts";
 import { type BookingRow, type ScheduleRow } from "../serialize.ts";
 import { presentBooking } from "../bookings/service.ts";
+import { getScheduleDetail } from "../schedules/repo.ts";
 import {
   acceptInvite,
   addMembership,
@@ -291,16 +292,13 @@ teamsRouter.get(
        ORDER BY u.id, s.id`,
       [teamId]
     );
-    ok(
-      res,
-      rows.map((row) => ({
-        id: row.id,
-        ownerId: row.user_id,
+    const detailed = await Promise.all(
+      rows.map(async (row) => ({
+        ...(await getScheduleDetail(row.id)),
         ownerUsername: row.username,
-        name: row.name,
-        timeZone: row.time_zone,
       }))
     );
+    ok(res, detailed);
   })
 );
 

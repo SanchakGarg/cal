@@ -92,17 +92,10 @@ export async function createDefaultEventTypes(userId: number, scheduleId: number
   ];
   for (const eventType of defaults) {
     await query(
-      `INSERT INTO event_types (owner_id, title, slug, length_in_minutes, schedule_id, locations)
-       VALUES ($1, $2, $3, $4, $5, $6)
+      `INSERT INTO event_types (owner_id, title, slug, length_in_minutes, schedule_id)
+       VALUES ($1, $2, $3, $4, $5)
        ON CONFLICT DO NOTHING`,
-      [
-        userId,
-        eventType.title,
-        eventType.slug,
-        eventType.length,
-        scheduleId,
-        JSON.stringify([{ type: "integration", integration: "cal-video" }]),
-      ]
+      [userId, eventType.title, eventType.slug, eventType.length, scheduleId]
     );
   }
 }

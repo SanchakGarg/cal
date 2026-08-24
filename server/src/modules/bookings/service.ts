@@ -102,7 +102,7 @@ function resolveLocation(eventType: EventTypeRow, requested?: string): string {
   if (!first) return "";
   switch (first.type) {
     case "integration":
-      return String(first.integration ?? "cal-video");
+      return String(first.integration ?? "");
     case "link":
       return String(first.link ?? "");
     case "address":

@@ -8,6 +8,7 @@ import { Select } from "../ui/Select.tsx";
 import { TimezoneSelect } from "../ui/TimePickers.tsx";
 import { TimeSlotColumn } from "../ui/TimeSlots.tsx";
 import { Icon } from "../ui/Icon.tsx";
+import { locationIcon, locationLabel } from "../ui/LocationPicker.tsx";
 import { useToast } from "../ui/Toast.tsx";
 import { api, errorMessage } from "../lib/api.ts";
 import type { Booking, EventType, PublicProfile, PublicTeamProfile, SlotMap } from "../lib/types.ts";
@@ -59,6 +60,9 @@ export function BookerPage({ username, teamSlug, eventSlug, rescheduleUid }: Boo
   const [responses, setResponses] = useState<Record<string, unknown>>({});
   const [booking, setBooking] = useState(false);
   const [reservationUid, setReservationUid] = useState<string | null>(null);
+  const [timeFormat, setTimeFormat] = useState<12 | 24>(() =>
+    localStorage.getItem("cal.bookerTimeFormat") === "24" ? 24 : 12
+  );
 
   useEffect(() => {
     const load = async (): Promise<void> => {
@@ -143,7 +147,11 @@ export function BookerPage({ username, teamSlug, eventSlug, rescheduleUid }: Boo
 
   const enabledDates = useMemo(() => new Set(Object.keys(slots)), [slots]);
   const daySlots = selectedDate ? slots[selectedDate] ?? [] : [];
-  const timeFormat: 12 | 24 = 12;
+
+  const changeTimeFormat = (next: 12 | 24): void => {
+    setTimeFormat(next);
+    localStorage.setItem("cal.bookerTimeFormat", String(next));
+  };
 
   const reserve = async (start: string): Promise<void> => {
     setSelectedSlot(start);
@@ -224,18 +232,6 @@ export function BookerPage({ username, teamSlug, eventSlug, rescheduleUid }: Boo
     );
   }
 
-  const locationLabel = (): string => {
-    const location = eventType.locations[0];
-    if (!location) return "Location to be confirmed";
-    if (location.type === "integration") return location.integration === "cal-video" ? "Cal Video" : String(location.integration);
-    if (location.type === "link") return "Web conferencing";
-    if (location.type === "address") return String(location.address);
-    if (location.type === "phone") return String(location.phone);
-    if (location.type === "attendeePhone") return "Attendee phone";
-    if (location.type === "attendeeAddress") return "Attendee address";
-    return "Custom location";
-  };
-
   const customFields = eventType.bookingFields.filter(
     (field) =>
       !["name", "email", "location", "notes", "guests", "rescheduleReason", "title", "splitName"].includes(
@@ -289,8 +285,8 @@ export function BookerPage({ username, teamSlug, eventSlug, rescheduleUid }: Boo
               )}
             </li>
             <li>
-              <Icon name={eventType.locations[0]?.type === "phone" ? "phone" : "video"} size={15} />
-              <span>{locationLabel()}</span>
+              <Icon name={locationIcon(eventType.locations[0])} size={15} />
+              <span>{locationLabel(eventType.locations[0])}</span>
             </li>
             {eventType.recurrence && !eventType.recurrence.disabled ? (
               <li>
@@ -488,7 +484,28 @@ export function BookerPage({ username, teamSlug, eventSlug, rescheduleUid }: Boo
               <section className="cal-booker__slots">
                 <div className="cal-booker__slots-head">
                   <strong>{selectedDate ? formatDateISO(selectedDate, { weekday: "short" }) : "Pick a date"}</strong>
+                  <div className="cal-booker__format">
+                    <button
+                      type="button"
+                      className={timeFormat === 12 ? "is-active" : ""}
+                      onClick={() => changeTimeFormat(12)}
+                    >
+                      12h
+                    </button>
+                    <button
+                      type="button"
+                      className={timeFormat === 24 ? "is-active" : ""}
+                      onClick={() => changeTimeFormat(24)}
+                    >
+                      24h
+                    </button>
+                  </div>
                 </div>
+                {daySlots.length > 0 ? (
+                  <p className="cal-hint">
+                    {daySlots.length} slot{daySlots.length === 1 ? "" : "s"} available
+                  </p>
+                ) : null}
                 <TimeSlotColumn
                   slots={daySlots}
                   timeZone={timeZone}

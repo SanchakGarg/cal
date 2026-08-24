@@ -99,7 +99,37 @@
 }
 
 .cal-booker__slots-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
   font-size: 13px;
+}
+
+.cal-booker__format {
+  display: inline-flex;
+  padding: 2px;
+  gap: 2px;
+  border-radius: var(--cal-radius-sm);
+  background: var(--cal-bg-muted);
+}
+
+.cal-booker__format button {
+  height: 22px;
+  padding: 0 7px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--cal-text-subtle);
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.cal-booker__format button.is-active {
+  background: var(--cal-bg);
+  color: var(--cal-text-emphasis);
+  box-shadow: var(--cal-shadow-sm);
 }
 
 .cal-booker__form {
