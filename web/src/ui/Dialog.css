@@ -1,0 +1,46 @@
+.cal-dialog__backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgb(17 24 39 / 0.45);
+  backdrop-filter: blur(2px);
+}
+
+.cal-dialog {
+  width: 100%;
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
+  background: var(--cal-bg);
+  border: 1px solid var(--cal-border-subtle);
+  border-radius: var(--cal-radius-lg);
+  box-shadow: var(--cal-shadow-dialog);
+}
+
+.cal-dialog__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 20px 20px 12px;
+}
+
+.cal-dialog__body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 4px 20px 16px;
+}
+
+.cal-dialog__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 14px 20px;
+  border-top: 1px solid var(--cal-border-subtle);
+  background: var(--cal-bg-subtle);
+  border-radius: 0 0 var(--cal-radius-lg) var(--cal-radius-lg);
+}

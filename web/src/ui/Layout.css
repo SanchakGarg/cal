@@ -1,0 +1,326 @@
+.cal-page-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 24px 0 16px;
+}
+
+.cal-page-header__back {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--cal-border-subtle);
+  border-radius: var(--cal-radius-sm);
+  background: var(--cal-bg);
+  cursor: pointer;
+}
+
+.cal-page-header__text {
+  flex: 1;
+  min-width: 0;
+}
+
+.cal-page-header__subtitle {
+  margin-top: 2px;
+  font-size: 13px;
+  color: var(--cal-text-subtle);
+}
+
+.cal-page-header__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cal-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: var(--cal-radius-full);
+  font-size: 12px;
+  font-weight: 500;
+  background: var(--cal-bg-muted);
+  color: var(--cal-text);
+}
+
+.cal-badge--info {
+  background: var(--cal-bg-info);
+  color: var(--cal-text-info);
+}
+.cal-badge--success {
+  background: var(--cal-bg-success);
+  color: var(--cal-text-success);
+}
+.cal-badge--attention {
+  background: var(--cal-bg-attention);
+  color: var(--cal-text-attention);
+}
+.cal-badge--error {
+  background: var(--cal-bg-error);
+  color: var(--cal-text-error);
+}
+
+.cal-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--cal-bg-emphasis);
+  color: var(--cal-text-emphasis);
+  font-weight: 600;
+  overflow: hidden;
+  flex: none;
+  border: 1px solid var(--cal-border-subtle);
+}
+
+.cal-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.cal-avatar-group {
+  display: inline-flex;
+  align-items: center;
+}
+
+.cal-avatar-group__rest {
+  margin-left: 6px;
+  font-size: 12px;
+  color: var(--cal-text-subtle);
+}
+
+.cal-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 56px 24px;
+  text-align: center;
+  border: 1px dashed var(--cal-border);
+  border-radius: var(--cal-radius-lg);
+  background: var(--cal-bg-subtle);
+}
+
+.cal-empty__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--cal-bg);
+  border: 1px solid var(--cal-border-subtle);
+  color: var(--cal-text-subtle);
+}
+
+.cal-empty p {
+  max-width: 380px;
+  font-size: 13px;
+  color: var(--cal-text-subtle);
+}
+
+.cal-empty__action {
+  margin-top: 8px;
+}
+
+.cal-skeleton {
+  display: block;
+  background: linear-gradient(90deg, var(--cal-bg-muted) 25%, var(--cal-bg-emphasis) 50%, var(--cal-bg-muted) 75%);
+  background-size: 200% 100%;
+  animation: cal-shimmer 1.4s ease infinite;
+}
+
+@keyframes cal-shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+
+.cal-tabs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.cal-tabs--underline {
+  border-bottom: 1px solid var(--cal-border-subtle);
+}
+
+.cal-tabs__tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 12px;
+  border: 0;
+  background: transparent;
+  color: var(--cal-text-subtle);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+}
+
+.cal-tabs__tab:hover {
+  color: var(--cal-text-emphasis);
+}
+
+.cal-tabs--underline .cal-tabs__tab.is-active {
+  color: var(--cal-text-emphasis);
+  border-bottom-color: var(--cal-brand);
+}
+
+.cal-tabs--pill .cal-tabs__tab {
+  border-radius: var(--cal-radius-sm);
+  border-bottom: 0;
+  margin-bottom: 0;
+}
+
+.cal-tabs--pill .cal-tabs__tab.is-active {
+  background: var(--cal-bg-muted);
+  color: var(--cal-text-emphasis);
+}
+
+.cal-tabs__count {
+  padding: 0 6px;
+  border-radius: var(--cal-radius-full);
+  background: var(--cal-bg-muted);
+  font-size: 11px;
+}
+
+.cal-segmented {
+  display: inline-flex;
+  padding: 2px;
+  gap: 2px;
+  background: var(--cal-bg-muted);
+  border-radius: var(--cal-radius-sm);
+}
+
+.cal-segmented button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: var(--cal-radius-sm);
+  background: transparent;
+  color: var(--cal-text-subtle);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.cal-segmented button.is-active {
+  background: var(--cal-bg);
+  color: var(--cal-text-emphasis);
+  box-shadow: var(--cal-shadow-sm);
+}
+
+.cal-list {
+  border: 1px solid var(--cal-border-subtle);
+  border-radius: var(--cal-radius-lg);
+  background: var(--cal-bg);
+  overflow: hidden;
+}
+
+.cal-list-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--cal-border-subtle);
+  background: var(--cal-bg);
+}
+
+.cal-list-row:last-child {
+  border-bottom: 0;
+}
+
+.cal-list-row.is-clickable {
+  cursor: pointer;
+}
+
+.cal-list-row.is-clickable:hover {
+  background: var(--cal-bg-subtle);
+}
+
+.cal-stepper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  list-style: none;
+  padding: 0;
+}
+
+.cal-stepper li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--cal-text-muted);
+}
+
+.cal-stepper li:not(:last-child)::after {
+  content: "";
+  display: block;
+  width: 24px;
+  height: 1px;
+  background: var(--cal-border);
+  margin-left: 4px;
+}
+
+.cal-stepper__dot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1px solid var(--cal-border);
+  font-size: 11px;
+}
+
+.cal-stepper li.is-current .cal-stepper__dot,
+.cal-stepper li.is-done .cal-stepper__dot {
+  background: var(--cal-brand);
+  border-color: var(--cal-brand);
+  color: var(--cal-brand-text);
+}
+
+.cal-stepper li.is-current,
+.cal-stepper li.is-done {
+  color: var(--cal-text-emphasis);
+}
+
+.cal-settings-section {
+  display: flex;
+  flex-direction: column;
+}
+
+.cal-settings-section__head {
+  padding: 18px 20px 0;
+}
+
+.cal-settings-section__body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px 20px 20px;
+}
+
+.cal-settings-section__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px 20px;
+  border-top: 1px solid var(--cal-border-subtle);
+  background: var(--cal-bg-subtle);
+  border-radius: 0 0 var(--cal-radius-lg) var(--cal-radius-lg);
+}

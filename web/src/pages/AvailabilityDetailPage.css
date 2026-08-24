@@ -1,0 +1,35 @@
+.cal-availability {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 20px;
+  align-items: start;
+}
+
+.cal-availability__main {
+  padding: 4px 20px 12px;
+}
+
+.cal-availability__name {
+  padding: 16px 0;
+  max-width: 320px;
+}
+
+.cal-availability__side {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.cal-availability__panel {
+  padding: 16px;
+}
+
+.cal-availability__default {
+  margin-right: 4px;
+}
+
+@media (max-width: 980px) {
+  .cal-availability {
+    grid-template-columns: 1fr;
+  }
+}

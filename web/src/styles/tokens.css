@@ -1,0 +1,87 @@
+/* Design tokens mirroring cal.com's light and dark surfaces. */
+:root {
+  --cal-bg: #ffffff;
+  --cal-bg-subtle: #f9fafb;
+  --cal-bg-muted: #f3f4f6;
+  --cal-bg-emphasis: #e5e7eb;
+  --cal-bg-inverted: #111827;
+  --cal-bg-info: #eff6ff;
+  --cal-bg-success: #ecfdf5;
+  --cal-bg-attention: #fffbeb;
+  --cal-bg-error: #fef2f2;
+
+  --cal-border-subtle: #e5e7eb;
+  --cal-border: #d1d5db;
+  --cal-border-emphasis: #9ca3af;
+  --cal-border-booker: #e5e7eb;
+
+  --cal-text-emphasis: #111827;
+  --cal-text: #374151;
+  --cal-text-subtle: #6b7280;
+  --cal-text-muted: #9ca3af;
+  --cal-text-inverted: #ffffff;
+  --cal-text-info: #1e40af;
+  --cal-text-success: #065f46;
+  --cal-text-attention: #92400e;
+  --cal-text-error: #991b1b;
+
+  --cal-brand: #111827;
+  --cal-brand-hover: #1f2937;
+  --cal-brand-text: #ffffff;
+  --cal-danger: #dc2626;
+  --cal-danger-hover: #b91c1c;
+
+  --cal-radius-sm: 6px;
+  --cal-radius: 8px;
+  --cal-radius-lg: 12px;
+  --cal-radius-full: 999px;
+
+  --cal-shadow-sm: 0 1px 2px rgb(0 0 0 / 0.05);
+  --cal-shadow: 0 1px 3px rgb(0 0 0 / 0.08), 0 1px 2px rgb(0 0 0 / 0.04);
+  --cal-shadow-drop: 0 4px 12px rgb(0 0 0 / 0.08), 0 1px 3px rgb(0 0 0 / 0.06);
+  --cal-shadow-dialog: 0 20px 40px rgb(0 0 0 / 0.16);
+
+  --cal-font: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --cal-font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+
+  --cal-sidebar-width: 256px;
+  --cal-header-height: 60px;
+}
+
+[data-theme="dark"] {
+  --cal-bg: #101010;
+  --cal-bg-subtle: #1c1c1c;
+  --cal-bg-muted: #242424;
+  --cal-bg-emphasis: #2b2b2b;
+  --cal-bg-inverted: #f9fafb;
+  --cal-bg-info: #14243d;
+  --cal-bg-success: #10251c;
+  --cal-bg-attention: #2b2010;
+  --cal-bg-error: #2c1416;
+
+  --cal-border-subtle: #292929;
+  --cal-border: #3a3a3a;
+  --cal-border-emphasis: #575757;
+  --cal-border-booker: #292929;
+
+  --cal-text-emphasis: #f9fafb;
+  --cal-text: #d4d4d4;
+  --cal-text-subtle: #a1a1a1;
+  --cal-text-muted: #737373;
+  --cal-text-inverted: #101010;
+  --cal-text-info: #93c5fd;
+  --cal-text-success: #6ee7b7;
+  --cal-text-attention: #fcd34d;
+  --cal-text-error: #fca5a5;
+
+  --cal-brand: #f9fafb;
+  --cal-brand-hover: #e5e7eb;
+  --cal-brand-text: #101010;
+  --cal-danger: #ef4444;
+  --cal-danger-hover: #dc2626;
+
+  --cal-shadow-sm: 0 1px 2px rgb(0 0 0 / 0.4);
+  --cal-shadow: 0 1px 3px rgb(0 0 0 / 0.5);
+  --cal-shadow-drop: 0 4px 12px rgb(0 0 0 / 0.55);
+  --cal-shadow-dialog: 0 20px 40px rgb(0 0 0 / 0.6);
+}

@@ -1,0 +1,73 @@
+.cal-switch-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.cal-switch {
+  position: relative;
+  flex: none;
+  border: 0;
+  border-radius: var(--cal-radius-full);
+  background: var(--cal-bg-emphasis);
+  cursor: pointer;
+  transition: background 140ms ease;
+  padding: 0;
+}
+
+.cal-switch--md {
+  width: 36px;
+  height: 20px;
+}
+
+.cal-switch--sm {
+  width: 30px;
+  height: 17px;
+}
+
+.cal-switch.is-on {
+  background: var(--cal-brand);
+}
+
+.cal-switch:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.cal-switch__thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--cal-bg);
+  box-shadow: var(--cal-shadow-sm);
+  transition: transform 140ms ease;
+}
+
+.cal-switch--sm .cal-switch__thumb {
+  width: 13px;
+  height: 13px;
+}
+
+.cal-switch--md.is-on .cal-switch__thumb {
+  transform: translateX(16px);
+}
+
+.cal-switch--sm.is-on .cal-switch__thumb {
+  transform: translateX(13px);
+}
+
+.cal-switch__text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.cal-switch__label {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--cal-text-emphasis);
+  cursor: pointer;
+}

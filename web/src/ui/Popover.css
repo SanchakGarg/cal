@@ -1,0 +1,44 @@
+.cal-popover {
+  position: fixed;
+  z-index: 60;
+  background: var(--cal-bg);
+  border: 1px solid var(--cal-border-subtle);
+  border-radius: var(--cal-radius);
+  box-shadow: var(--cal-shadow-drop);
+  padding: 6px;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.cal-menu {
+  display: flex;
+  flex-direction: column;
+  min-width: 180px;
+}
+
+.cal-menu__item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: var(--cal-radius-sm);
+  background: transparent;
+  text-align: left;
+  font-size: 13px;
+  color: var(--cal-text-emphasis);
+  cursor: pointer;
+}
+
+.cal-menu__item:hover:not(:disabled) {
+  background: var(--cal-bg-muted);
+}
+
+.cal-menu__item:disabled {
+  color: var(--cal-text-muted);
+  cursor: not-allowed;
+}
+
+.cal-menu__item.is-destructive {
+  color: var(--cal-danger);
+}

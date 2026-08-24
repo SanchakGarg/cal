@@ -1,0 +1,47 @@
+.cal-profile {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  padding: 56px 16px;
+  background: var(--cal-bg-subtle);
+}
+
+.cal-profile__head {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+  max-width: 520px;
+}
+
+.cal-profile__head h1 {
+  font-size: 24px;
+}
+
+.cal-profile__events {
+  width: 100%;
+  max-width: 520px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.cal-profile__event {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px;
+  transition: border-color 120ms ease;
+}
+
+.cal-profile__event:hover {
+  border-color: var(--cal-border-emphasis);
+}
+
+.cal-profile__event-meta {
+  margin-top: 8px;
+}

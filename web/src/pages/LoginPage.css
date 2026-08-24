@@ -1,0 +1,85 @@
+.cal-auth {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: var(--cal-bg-subtle);
+}
+
+.cal-auth__card {
+  width: 100%;
+  max-width: 400px;
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.cal-auth__head {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.cal-auth__logo {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--cal-text-emphasis);
+}
+
+.cal-auth__oidc {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 42px;
+  border-radius: var(--cal-radius-sm);
+  background: var(--cal-brand);
+  color: var(--cal-brand-text);
+  font-weight: 500;
+}
+
+.cal-auth__oidc:hover {
+  background: var(--cal-brand-hover);
+}
+
+.cal-auth__divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--cal-text-muted);
+  font-size: 12px;
+}
+
+.cal-auth__divider::before,
+.cal-auth__divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--cal-border-subtle);
+}
+
+.cal-auth__form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.cal-auth__submit {
+  width: 100%;
+}
+
+.cal-auth__disabled {
+  font-size: 13px;
+  color: var(--cal-text-subtle);
+}
+
+.cal-auth__disabled code {
+  font-family: var(--cal-font-mono);
+  font-size: 12px;
+  background: var(--cal-bg-muted);
+  padding: 1px 4px;
+  border-radius: 4px;
+}

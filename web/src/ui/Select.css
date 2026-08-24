@@ -1,0 +1,117 @@
+.cal-select {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  background: var(--cal-bg);
+  border: 1px solid var(--cal-border);
+  border-radius: var(--cal-radius-sm);
+  box-shadow: var(--cal-shadow-sm);
+  color: var(--cal-text-emphasis);
+  cursor: pointer;
+  text-align: left;
+}
+
+.cal-select--md {
+  height: 36px;
+  padding: 0 10px;
+  font-size: 14px;
+}
+
+.cal-select--sm {
+  height: 30px;
+  padding: 0 8px;
+  font-size: 13px;
+}
+
+.cal-select:hover:not(:disabled) {
+  border-color: var(--cal-border-emphasis);
+}
+
+.cal-select.is-open {
+  border-color: var(--cal-border-emphasis);
+  box-shadow: 0 0 0 2px var(--cal-bg-emphasis);
+}
+
+.cal-select:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.cal-select > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cal-select__placeholder {
+  color: var(--cal-text-muted);
+}
+
+.cal-select__panel {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.cal-select__search {
+  height: 32px;
+  padding: 0 8px;
+  border: 1px solid var(--cal-border);
+  border-radius: var(--cal-radius-sm);
+  background: var(--cal-bg);
+  color: var(--cal-text-emphasis);
+  font-size: 13px;
+}
+
+.cal-select__search:focus {
+  outline: none;
+  border-color: var(--cal-border-emphasis);
+}
+
+.cal-select__list {
+  display: flex;
+  flex-direction: column;
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.cal-select__option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: var(--cal-radius-sm);
+  background: transparent;
+  color: var(--cal-text-emphasis);
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.cal-select__option > span {
+  display: flex;
+  flex-direction: column;
+}
+
+.cal-select__option.is-active {
+  background: var(--cal-bg-muted);
+}
+
+.cal-select__option.is-selected {
+  font-weight: 500;
+}
+
+.cal-select__option-hint {
+  font-size: 12px;
+  color: var(--cal-text-subtle);
+}
+
+.cal-select__empty {
+  padding: 10px;
+  font-size: 13px;
+  color: var(--cal-text-subtle);
+}

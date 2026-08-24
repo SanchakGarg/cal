@@ -1,0 +1,39 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: cal-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: cal
+      POSTGRES_PASSWORD: cal
+      POSTGRES_DB: cal
+    ports:
+      - "5432:5432"
+    volumes:
+      - cal-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cal -d cal"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # Full self-hosted app (API + built web on one port). Start with:
+  #   docker compose --profile app up -d --build
+  app:
+    profiles: ["app"]
+    build: .
+    container_name: cal-app
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATABASE_URL: postgres://cal:cal@postgres:5432/cal
+      SERVE_WEB: "true"
+      API_PORT: "3001"
+    ports:
+      - "3001:3001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  cal-pgdata:

@@ -1,0 +1,55 @@
+.cal-slots {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 100%;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.cal-slot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 2px;
+  min-height: 38px;
+  padding: 6px 12px;
+  border: 1px solid var(--cal-border);
+  border-radius: var(--cal-radius-sm);
+  background: var(--cal-bg);
+  color: var(--cal-text-emphasis);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color 120ms ease, background 120ms ease;
+}
+
+.cal-slot:hover {
+  border-color: var(--cal-border-emphasis);
+  background: var(--cal-bg-subtle);
+}
+
+.cal-slot.is-selected {
+  background: var(--cal-brand);
+  border-color: var(--cal-brand);
+  color: var(--cal-brand-text);
+}
+
+.cal-slot__seats {
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--cal-text-subtle);
+}
+
+.cal-slot.is-selected .cal-slot__seats {
+  color: inherit;
+  opacity: 0.8;
+}
+
+.cal-slots__empty {
+  padding: 24px 8px;
+  font-size: 13px;
+  color: var(--cal-text-subtle);
+  text-align: center;
+}

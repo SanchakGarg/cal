@@ -1,0 +1,115 @@
+@import "./tokens.css";
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+* {
+  margin: 0;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  font-family: var(--cal-font);
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--cal-text);
+  background: var(--cal-bg);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  color: var(--cal-text-emphasis);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+h1 {
+  font-size: 20px;
+}
+h2 {
+  font-size: 16px;
+}
+h3 {
+  font-size: 15px;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+}
+
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--cal-brand);
+  outline-offset: 2px;
+}
+
+/* Shared primitives used across pages. */
+.cal-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.cal-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cal-spacer {
+  flex: 1;
+}
+
+.cal-muted {
+  color: var(--cal-text-subtle);
+}
+
+.cal-card {
+  background: var(--cal-bg);
+  border: 1px solid var(--cal-border-subtle);
+  border-radius: var(--cal-radius-lg);
+  box-shadow: var(--cal-shadow-sm);
+}
+
+.cal-divider {
+  height: 1px;
+  background: var(--cal-border-subtle);
+  border: 0;
+}
+
+.cal-section-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--cal-text-emphasis);
+}
+
+.cal-hint {
+  font-size: 12px;
+  color: var(--cal-text-subtle);
+}
+
+.cal-scroll {
+  overflow-x: auto;
+}

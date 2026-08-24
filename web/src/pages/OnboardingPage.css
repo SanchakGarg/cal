@@ -1,0 +1,30 @@
+.cal-onboarding {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  padding: 40px 20px;
+  background: var(--cal-bg-subtle);
+}
+
+.cal-onboarding__inner {
+  width: 100%;
+  max-width: 640px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.cal-onboarding__card {
+  padding: 8px 24px 24px;
+}
+
+.cal-onboarding__actions {
+  margin-top: 16px;
+}
+
+.cal-onboarding__done {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 32px 24px;
+}

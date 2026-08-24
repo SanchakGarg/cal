@@ -1,0 +1,169 @@
+.cal-week {
+  display: flex;
+  flex-direction: column;
+}
+
+.cal-day-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--cal-border-subtle);
+}
+
+.cal-day-row:last-child {
+  border-bottom: 0;
+}
+
+.cal-day-row__toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 150px;
+  flex: none;
+  padding-top: 6px;
+}
+
+.cal-day-row__name {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--cal-text-emphasis);
+}
+
+.cal-day-row.is-off .cal-day-row__name {
+  color: var(--cal-text-muted);
+}
+
+.cal-day-row__ranges {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.cal-day-row__range {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cal-day-row__range > div {
+  width: 118px;
+}
+
+.cal-day-row__dash {
+  color: var(--cal-text-muted);
+}
+
+.cal-day-row__unavailable {
+  padding-top: 6px;
+  font-size: 14px;
+  color: var(--cal-text-muted);
+}
+
+.cal-day-row__actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding-top: 3px;
+}
+
+.cal-copy-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: var(--cal-radius-sm);
+  background: transparent;
+  color: var(--cal-text);
+  cursor: pointer;
+}
+
+.cal-copy-trigger:hover:not(:disabled) {
+  background: var(--cal-bg-muted);
+}
+
+.cal-copy-trigger:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.cal-copy-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 6px;
+}
+
+.cal-overrides {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.cal-overrides__list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cal-overrides__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--cal-border-subtle);
+  border-radius: var(--cal-radius);
+  background: var(--cal-bg);
+}
+
+.cal-overrides__date {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--cal-text-emphasis);
+}
+
+.cal-override-dialog {
+  display: grid;
+  grid-template-columns: 1fr 240px;
+  gap: 20px;
+}
+
+.cal-override-dialog__side {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.cal-override-dialog__ranges {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cal-override-dialog__jump {
+  margin-top: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 0;
+  background: transparent;
+  color: var(--cal-text-subtle);
+  font-size: 12px;
+  cursor: pointer;
+  align-self: flex-start;
+}
+
+@media (max-width: 720px) {
+  .cal-override-dialog {
+    grid-template-columns: 1fr;
+  }
+
+  .cal-day-row {
+    flex-wrap: wrap;
+  }
+}
