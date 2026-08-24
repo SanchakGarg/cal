@@ -101,16 +101,50 @@ SSO button — the login page renders whatever `GET /v2/auth/providers` reports.
 
 ## 2. Self-hosting (single container + Postgres)
 
+Copy-paste version — sets every variable that differs from the dev defaults:
+
 ```bash
+git clone https://github.com/SanchakGarg/cal.git
+cd cal
 cp .env.example .env
-# edit .env: JWT_SECRET, API_ORIGIN, WEB_ORIGIN, SERVE_WEB=true, OIDC settings
+
+sed -i 's|^DATABASE_URL=.*|DATABASE_URL=postgres://cal:cal@postgres:5432/cal|' .env
+sed -i 's|^SERVE_WEB=.*|SERVE_WEB=true|' .env
+sed -i 's|^API_ORIGIN=.*|API_ORIGIN=http://localhost:3001|' .env
+sed -i 's|^WEB_ORIGIN=.*|WEB_ORIGIN=http://localhost:3001|' .env
+sed -i "s|^JWT_SECRET=.*|JWT_SECRET=$(openssl rand -base64 48)|" .env
+
 docker compose --profile app up -d --build
 docker compose exec app node --experimental-strip-types server/src/db/migrate.ts
-# optional demo data:
-docker compose exec app node --experimental-strip-types server/src/db/seed.ts
+docker compose exec app node --experimental-strip-types server/src/db/seed.ts   # optional demo data
 ```
 
+On a real domain, replace `http://localhost:3001` in the two `sed` lines with
+`https://cal.example.com` and see the reverse-proxy snippet below.
+
 The app is then on <http://localhost:3001> — API under `/v2`, web app on every other path.
+
+`DATABASE_URL` uses the host `postgres` (the compose service name). `localhost` inside the
+container points at the container itself, so that is the usual cause of a startup failure
+with `ECONNREFUSED 127.0.0.1:5432`.
+
+Managing the stack:
+
+```bash
+docker compose logs -f app                   # follow logs
+docker compose --profile app restart app      # pick up .env changes
+docker compose --profile app up -d --build    # rebuild after pulling new code
+docker compose --profile app down             # stop; add -v to wipe the database volume
+```
+
+### WSL notes
+
+Docker Desktop: enable Settings → Resources → WSL integration for your distro, then run the
+commands above from the WSL shell. Docker engine installed inside WSL instead:
+`sudo service docker start` first (WSL does not run systemd by default).
+
+Ports published by compose are reachable from Windows on `localhost`, so
+<http://localhost:3001> works in a Windows browser with no extra setup.
 
 Minimal production `.env` behind a domain:
 

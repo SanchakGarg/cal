@@ -13,27 +13,92 @@ generated availability, and organizations/teams host collective or round-robin e
 
 ## Requirements
 
-- Node 22+ (uses `node --experimental-strip-types`, so TypeScript runs without a build step)
-- Docker (for Postgres 16) — or any reachable Postgres via `DATABASE_URL`
+- Docker + Docker Compose (works the same in WSL — with Docker Desktop enable
+  Settings → Resources → WSL integration, or inside WSL run `sudo service docker start`)
+- For the hot-reload option only: Node 22+ (the API runs TypeScript directly via
+  `node --experimental-strip-types`, so there is no build step for the server)
 
-## Setup
+## Run it with Docker (recommended)
+
+One container serves the API and the built web app on port 3001; Postgres runs beside it.
 
 ```bash
-cp .env.example .env         # then edit the OIDC section for your Zitadel instance
-npm install
-npm run db:up                # docker compose up -d postgres
-npm run db:migrate           # applies db/migrations/*.sql
-npm run db:seed              # demo users, team, bookings (safe to re-run)
-npm run dev                  # API on :3001, web on :5173
+git clone https://github.com/SanchakGarg/cal.git
+cd cal
+cp .env.example .env
+
+sed -i 's|^DATABASE_URL=.*|DATABASE_URL=postgres://cal:cal@postgres:5432/cal|' .env
+sed -i 's|^SERVE_WEB=.*|SERVE_WEB=true|' .env
+sed -i 's|^API_ORIGIN=.*|API_ORIGIN=http://localhost:3001|' .env
+sed -i 's|^WEB_ORIGIN=.*|WEB_ORIGIN=http://localhost:3001|' .env
+sed -i "s|^JWT_SECRET=.*|JWT_SECRET=$(openssl rand -base64 48)|" .env
+
+docker compose --profile app up -d --build
+docker compose exec app node --experimental-strip-types server/src/db/migrate.ts
+docker compose exec app node --experimental-strip-types server/src/db/seed.ts
 ```
 
-If the Docker daemon is not running: `sudo systemctl start docker`.
+Open <http://localhost:3001> and press **Continue as guest** — no identity provider needed.
 
-Then open <http://localhost:5173> and press **Continue as guest** — no provider setup needed.
-See [DEPLOY.md](DEPLOY.md) for a step-by-step guest walkthrough, API curl examples, and
-self-hosting (single container, Zitadel wiring, reverse proxy).
+`DATABASE_URL` must use the host `postgres` (the compose service name), not `localhost`:
+inside the container `localhost` is the container itself. The `db:up` / `db:migrate` npm
+scripts assume `localhost` instead, so they are for the hot-reload setup below.
 
-Seeded logins (guest login accepts any of these emails):
+Day to day:
+
+```bash
+docker compose logs -f app                  # follow logs
+docker compose --profile app restart app     # pick up .env changes
+docker compose --profile app down            # stop (add -v to also wipe the database)
+docker compose --profile app up -d --build   # rebuild after pulling new code
+```
+
+## Run it with hot reload (Postgres in Docker, app on the host)
+
+Web on :5173 with Vite HMR, API on :3001.
+
+```bash
+cp .env.example .env      # defaults already point at localhost:5432, guest login on
+npm install
+npm run db:up             # docker compose up -d postgres
+npm run db:migrate        # applies db/migrations/*.sql
+npm run db:seed           # demo users, team, bookings (safe to re-run)
+npm run dev               # API :3001, web :5173
+```
+
+Open <http://localhost:5173>. If the Docker daemon is not running:
+`sudo systemctl start docker` (or `sudo service docker start` in WSL).
+
+## Run it without Docker
+
+Any reachable Postgres 16 works — install it locally and point `DATABASE_URL` at it:
+
+```bash
+sudo apt install -y postgresql && sudo service postgresql start
+sudo -u postgres psql -c "CREATE USER cal WITH PASSWORD 'cal';"
+sudo -u postgres psql -c "CREATE DATABASE cal OWNER cal;"
+
+cp .env.example .env      # DATABASE_URL default already matches
+npm install
+npm run db:migrate
+npm run db:seed
+npm run dev
+```
+
+To serve the production bundle from the API instead of Vite:
+
+```bash
+npm run build -w web
+SERVE_WEB=true npm run start -w server      # everything on :3001
+```
+
+## Testing as a guest
+
+Guest login is on by default (`AUTH_GUEST_ENABLED=true`), so you can exercise the whole
+product without configuring Zitadel. Type any name, leave the email empty, and you get a
+throwaway account with a Mon–Fri 09:00–17:00 schedule and two starter event types.
+
+Seeded accounts — entering one of these emails on the guest form signs you in as that user:
 
 | email | availability |
 |---|---|
@@ -42,6 +107,9 @@ Seeded logins (guest login accepts any of these emails):
 
 The seed also creates the `Acme Inc` organization, its `Sales` team, a collective
 `Product Demo` event and a round-robin `Sales Intro` event.
+
+[DEPLOY.md](DEPLOY.md) has a step-by-step walkthrough of every feature, `curl` examples
+against the API, TLS/reverse-proxy setup and the Zitadel wiring.
 
 ## Environment
 
