@@ -41,9 +41,8 @@ export function App() {
     if (me && path === "/auth/login") {
       navigate(me.completedOnboarding ? "/event-types" : "/getting-started", { replace: true });
     }
-    if (me && !me.completedOnboarding && isAppRoute && path !== "/getting-started") {
-      navigate("/getting-started", { replace: true });
-    }
+    // Onboarding is a suggestion, not a cage: users land there on first login but
+    // can navigate anywhere in the app afterwards.
   }, [loading, me, path, isAppRoute, navigate]);
 
   if (path === "/" ) {

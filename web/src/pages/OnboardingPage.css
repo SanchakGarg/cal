@@ -14,6 +14,13 @@
   gap: 20px;
 }
 
+.cal-onboarding__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
 .cal-onboarding__card {
   padding: 8px 24px 24px;
 }

@@ -32,6 +32,19 @@ export function OnboardingPage() {
   const [week, setWeek] = useState<WeeklySchedule>(defaultWeek());
   const [saving, setSaving] = useState(false);
 
+  const skip = async (): Promise<void> => {
+    setSaving(true);
+    try {
+      await api.patch<Me>("/v2/me", { completedOnboarding: true });
+      await refresh();
+      navigate("/event-types");
+    } catch (error) {
+      toast.error(errorMessage(error));
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const saveProfile = async (): Promise<void> => {
     setSaving(true);
     try {
@@ -88,7 +101,14 @@ export function OnboardingPage() {
   return (
     <div className="cal-onboarding">
       <div className="cal-onboarding__inner">
-        <Stepper steps={STEPS} current={step} />
+        <div className="cal-onboarding__top">
+          <Stepper steps={STEPS} current={step} />
+          {step < 3 ? (
+            <Button variant="minimal" size="sm" loading={saving} onClick={() => void skip()}>
+              Skip for now
+            </Button>
+          ) : null}
+        </div>
 
         {step === 0 ? (
           <section className="cal-card cal-onboarding__card">
