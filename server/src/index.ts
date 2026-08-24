@@ -1,5 +1,5 @@
 import { existsSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { dirname, isAbsolute, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import express from "express";
 import { env } from "./env.ts";
@@ -54,8 +54,10 @@ export function createApp(): express.Express {
 
   // Optionally serve the built web app from the same process (SERVE_WEB=true).
   if (env.serveWeb) {
-    const here = dirname(fileURLToPath(import.meta.url));
-    const dist = resolve(here, "../..", env.webDist);
+    // repoRoot is two levels up from server/src, so WEB_DIST is repo-relative
+    // ("web/dist"); an absolute WEB_DIST is used as given.
+    const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
+    const dist = isAbsolute(env.webDist) ? env.webDist : resolve(repoRoot, env.webDist);
     if (existsSync(dist)) {
       app.use(express.static(dist, { index: false, maxAge: "1h" }));
       app.get(/^(?!\/v2\/|\/health).*/, (_req, res) => {
@@ -77,8 +79,11 @@ if (isMain) {
   const app = createApp();
   app.listen(env.apiPort, () => {
     console.log(`API listening on http://localhost:${env.apiPort}`);
+    // Report what the login page will actually offer: OIDC needs to be configured too.
+    const oidcReady = env.oidc.enabled && Boolean(env.oidc.issuer && env.oidc.clientId);
     console.log(
-      `auth: oidc=${env.oidc.enabled ? "on" : "off"} guest=${env.guest.enabled ? "on" : "off"}`
+      `auth: oidc=${oidcReady ? "on" : env.oidc.enabled ? "enabled but not configured" : "off"} ` +
+        `guest=${env.guest.enabled ? "on" : "off"}`
     );
   });
 }

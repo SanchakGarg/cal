@@ -82,7 +82,7 @@ export const env = {
   // When true the API also serves the built web app, so one process/container is
   // enough to host everything.
   serveWeb: bool("SERVE_WEB", false),
-  webDist: str("WEB_DIST", "../web/dist"),
+  webDist: str("WEB_DIST", "web/dist"),
 } as const;
 
 /** Duration strings like `15m`, `30d`, `900` (seconds) to seconds. */
