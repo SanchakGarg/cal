@@ -61,17 +61,40 @@ publicRouter.get(
       "SELECT * FROM event_types WHERE team_id = $1 AND hidden = FALSE ORDER BY id",
       [team.id]
     );
-    const members = team.hide_book_a_team_member
-      ? []
-      : await query(
-          `SELECT u.id, u.name, u.username, u.avatar_url AS "avatarUrl"
+
+    // "Book a team member" lets a visitor book one person directly instead of the
+    // team event. Teams can opt out of it, and a private team never lists anyone.
+    const listMembers = !team.hide_book_a_team_member && !team.is_private;
+    const memberRows = listMembers
+      ? await query<{ id: number; name: string; username: string; avatar_url: string | null; bio: string | null }>(
+          `SELECT u.id, u.name, u.username, u.avatar_url, u.bio
            FROM memberships m JOIN users u ON u.id = m.user_id
            WHERE m.team_id = $1 AND m.accepted = TRUE ORDER BY u.id`,
           [team.id]
-        );
+        )
+      : [];
+
+    // Each member's own public events, so the page can offer them without a second round trip.
+    const memberEventTypes = memberRows.length
+      ? await query<EventTypeRow>(
+          `SELECT * FROM event_types
+           WHERE owner_id = ANY($1::int[]) AND team_id IS NULL AND hidden = FALSE
+           ORDER BY owner_id, id`,
+          [memberRows.map((member) => member.id)]
+        )
+      : [];
+    const presentedMemberEvents = await Promise.all(memberEventTypes.map(present));
+
     ok(res, {
       profile: serializeTeam(team),
-      members,
+      members: memberRows.map((member) => ({
+        id: member.id,
+        name: member.name,
+        username: member.username,
+        avatarUrl: member.avatar_url,
+        bio: member.bio,
+        eventTypes: presentedMemberEvents.filter((eventType) => eventType.ownerId === member.id),
+      })),
       eventTypes: await Promise.all(rows.map(present)),
     });
   })

@@ -152,7 +152,10 @@ bookings, ICS and Google/Outlook calendar links, outbound webhooks.
 **Organizations and teams** — organizations own teams, members are added or invited,
 roles OWNER/ADMIN/MEMBER, team event types with `collective` (intersection of hosts),
 `roundRobin` (union, least-recently-booked host wins) or `managed` scheduling, plus
-org-admin views of member schedules and out-of-office.
+org-admin views of member schedules and out-of-office. Every team also gets one public
+page at `/team/<slug>` listing all of its bookable events; unless the team turns
+*Book a team member* off, that page also lets a visitor pick any accepted member and book
+that person's own event types directly.
 
 ## Layout
 

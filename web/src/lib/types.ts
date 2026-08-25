@@ -229,6 +229,13 @@ export interface PublicProfile {
 
 export interface PublicTeamProfile {
   profile: Team;
-  members: Array<{ id: number; name: string; username: string; avatarUrl: string | null }>;
+  members: Array<{
+    id: number;
+    name: string;
+    username: string;
+    avatarUrl: string | null;
+    bio: string | null;
+    eventTypes: EventType[];
+  }>;
   eventTypes: EventType[];
 }

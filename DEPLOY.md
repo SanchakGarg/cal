@@ -53,6 +53,10 @@ Open <http://localhost:5173>. The login page shows **Continue as guest** (becaus
     * **Collective** — slots are the *intersection* of all hosts' availability.
     * **Round robin** — slots are the *union*; each booking goes to the least recently
       booked available host.
+    Open `/team/<slug>` (the *Preview* button on the team dashboard) to see the shared
+    booking page: all team events, then a **Book a team member** section listing each
+    accepted member with their own event types. Toggle that section off on the dashboard,
+    or make the team private, and the member list disappears from the public page.
 11. **Organizations** — *New organization* on the Teams page, then
     `/settings/organization/members` to add people, group them into teams and inspect each
     member's schedules.

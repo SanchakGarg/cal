@@ -126,3 +126,19 @@
     width: 100%;
   }
 }
+
+.cal-team__share {
+  gap: 12px;
+}
+
+.cal-team__share-url {
+  font-family: var(--cal-font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-size: 13px;
+  color: var(--cal-text-subtle);
+  background: var(--cal-bg-subtle);
+  border: 1px solid var(--cal-border-subtle);
+  border-radius: 8px;
+  padding: 8px 10px;
+  overflow-x: auto;
+  white-space: nowrap;
+}

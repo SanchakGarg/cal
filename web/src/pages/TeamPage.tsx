@@ -97,6 +97,7 @@ export function TeamPage({ teamId, tab }: { teamId: number; tab: TeamTab }) {
         {tab === "dashboard" ? (
           <TeamDashboard
             teamId={teamId}
+            team={team}
             members={members}
             eventTypes={eventTypes}
             bookings={bookings}
@@ -117,12 +118,14 @@ export function TeamPage({ teamId, tab }: { teamId: number; tab: TeamTab }) {
 
 function TeamDashboard({
   teamId,
+  team,
   members,
   eventTypes,
   bookings,
   onReload,
 }: {
   teamId: number;
+  team: Team | null;
   members: Membership[] | null;
   eventTypes: EventType[] | null;
   bookings: Booking[] | null;
@@ -173,6 +176,8 @@ function TeamDashboard({
 
   return (
     <div className="cal-stack">
+      {team ? <TeamShareCard team={team} onReload={onReload} /> : null}
+
       <div className="cal-team__stats">
         <StatCard label="Upcoming bookings" value={upcoming.length} icon="calendar" />
         <StatCard label="Next 7 days" value={stats.thisWeek} icon="clock" />
@@ -299,6 +304,69 @@ function StatCard({ label, value, icon }: { label: string; value: number; icon: 
       <span className="cal-stat__value">{value}</span>
       <span className="cal-stat__label">{label}</span>
     </div>
+  );
+}
+
+/**
+ * One public link for the whole team: every visible team event, plus — unless the
+ * team opts out — each member's own events so a visitor can book one person directly.
+ */
+function TeamShareCard({ team, onReload }: { team: Team; onReload: () => Promise<void> }) {
+  const toast = useToast();
+  const [saving, setSaving] = useState(false);
+
+  if (!team.slug) return null;
+  const url = `${window.location.origin}/team/${team.slug}`;
+
+  const setMemberBooking = async (enabled: boolean): Promise<void> => {
+    setSaving(true);
+    try {
+      await api.patch(`/v2/teams/${team.id}`, { hideBookATeamMember: !enabled });
+      toast.success(enabled ? "Members are bookable on the team page" : "Member booking hidden");
+      await onReload();
+    } catch (error) {
+      toast.error(errorMessage(error));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <section className="cal-card cal-team__panel cal-team__share">
+      <div className="cal-team__panel-head">
+        <div>
+          <h2>Team booking page</h2>
+          <p className="cal-hint">
+            Share one link. It lists every team event, and lets people book a single member too.
+          </p>
+        </div>
+        <div className="cal-row">
+          <CopyButton value={url} label="Copy team page link" />
+          <Button
+            size="sm"
+            variant="secondary"
+            startIcon="external"
+            onClick={() => openExternal(`/team/${team.slug}`)}
+          >
+            Preview
+          </Button>
+        </div>
+      </div>
+
+      <p className="cal-team__share-url">{url}</p>
+
+      <Switch
+        checked={!team.hideBookATeamMember && !team.isPrivate}
+        disabled={saving || team.isPrivate}
+        label="Book a team member"
+        description={
+          team.isPrivate
+            ? "Off because this team is private — private teams never list their members."
+            : "Visitors can pick any accepted member and book that person's own event types."
+        }
+        onChange={(next) => void setMemberBooking(next)}
+      />
+    </section>
   );
 }
 
@@ -521,8 +589,17 @@ function TeamMembers({
                 <strong>{membership.user?.name ?? `User ${membership.userId}`}</strong>
                 {membership.accepted ? null : <Badge tone="attention">Pending</Badge>}
               </div>
-              <p className="cal-hint">{membership.user?.email}</p>
+              <p className="cal-hint">
+                {membership.user?.email}
+                {membership.user?.username ? ` · /${membership.user.username}` : ""}
+              </p>
             </div>
+            {membership.user?.username ? (
+              <CopyButton
+                value={`${window.location.origin}/${membership.user.username}`}
+                label="Copy this member's booking link"
+              />
+            ) : null}
             <div style={{ width: 150 }}>
               <Select
                 size="sm"
