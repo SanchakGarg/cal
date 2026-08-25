@@ -46,6 +46,9 @@ async function upsertUser(seed: SeedUser): Promise<number> {
     name: seed.name,
     username: seed.username,
     timeZone: seed.timeZone,
+    // These are demo logins reached through the guest form, so they are guests.
+    // Guest login refuses to hand back a session for a non-guest account.
+    isGuest: true,
   });
   const scheduleId = await createDefaultSchedule(user.id, seed.timeZone);
   await query("DELETE FROM availability WHERE schedule_id = $1", [scheduleId]);

@@ -98,7 +98,12 @@ Guest login is on by default (`AUTH_GUEST_ENABLED=true`), so you can exercise th
 product without configuring Zitadel. Type any name, leave the email empty, and you get a
 throwaway account with a Mon–Fri 09:00–17:00 schedule and two starter event types.
 
-Seeded accounts — entering one of these emails on the guest form signs you in as that user:
+Guest login proves nothing about who is calling, so it only ever resumes *guest* accounts:
+supplying the email of a real (OIDC) user is refused rather than logging you in as them.
+Turn it off with `AUTH_GUEST_ENABLED=false` outside local use.
+
+Seeded accounts — these are guest accounts, so entering one of these emails on the guest
+form signs you in as that user:
 
 | email | availability |
 |---|---|
@@ -121,6 +126,9 @@ against the API, TLS/reverse-proxy setup and the Zitadel wiring.
 | `AUTH_OIDC_ENABLED` | turns the Zitadel button and `/v2/auth/oidc/*` on or off |
 | `OIDC_ISSUER`, `OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET`, `OIDC_REDIRECT_URI`, `OIDC_SCOPES` | Zitadel app settings. Leave the secret empty for a public (PKCE-only) client |
 | `AUTH_GUEST_ENABLED`, `GUEST_AUTO_CREATE` | guest login for local testing |
+| `EXPOSE_VERIFICATION_CODES` | returns booker email codes in the API response — local only, it defeats the check |
+| `ALLOW_PRIVATE_WEBHOOK_TARGETS` | allows webhook URLs pointing at private/loopback addresses |
+| `NODE_ENV` | `production` returns generic 5xx bodies and requires an explicit `JWT_SECRET` |
 | `SERVE_WEB` | serve the built web bundle from the API process (single-container hosting) |
 
 Register `http://localhost:3001/v2/auth/oidc/callback` as the redirect URI in Zitadel.

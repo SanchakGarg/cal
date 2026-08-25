@@ -64,24 +64,6 @@
   min-width: 0;
 }
 
-.cal-event-editor__bar {
-  position: sticky;
-  bottom: 16px;
-  z-index: 40;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-top: -56px;
-  padding: 10px 14px;
-  border: 1px solid var(--cal-border);
-  border-radius: var(--cal-radius-lg);
-  background: var(--cal-bg);
-  box-shadow: var(--cal-shadow-drop);
-  font-size: 13px;
-  color: var(--cal-text-emphasis);
-}
-
 .cal-limit-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));

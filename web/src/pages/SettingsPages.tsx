@@ -1,15 +1,13 @@
 import { useEffect, useState } from "react";
 import { Button, IconButton } from "../ui/Button.tsx";
-import { Dialog } from "../ui/Dialog.tsx";
 import { RadioGroup, TextArea, TextField } from "../ui/Field.tsx";
 import { Badge, List, ListRow, PageHeader, SettingsSection, Tabs } from "../ui/Layout.tsx";
 import { Select } from "../ui/Select.tsx";
 import { TimezoneSelect } from "../ui/TimePickers.tsx";
-import { MonthCalendar } from "../ui/Calendar.tsx";
 import { useToast } from "../ui/Toast.tsx";
 import { api, errorMessage } from "../lib/api.ts";
 import type { Me, OooEntry } from "../lib/types.ts";
-import { formatDateISO, todayISO } from "../lib/time.ts";
+import { formatDateISO } from "../lib/time.ts";
 import { useAuth } from "../app/auth.tsx";
 import { useRouter } from "../app/router.tsx";
 
@@ -153,24 +151,19 @@ function GeneralSettings() {
 }
 
 function OutOfOfficeSettings() {
-  const { me } = useAuth();
+  const { navigate } = useRouter();
   const toast = useToast();
-  const timeZone = me?.timeZone ?? "UTC";
 
   const [entries, setEntries] = useState<OooEntry[]>([]);
-  const [open, setOpen] = useState(false);
-  const [month, setMonth] = useState(() => `${todayISO(timeZone).slice(0, 7)}-01`);
-  const [start, setStart] = useState<string | null>(null);
-  const [end, setEnd] = useState<string | null>(null);
-  const [reason, setReason] = useState("vacation");
-  const [notes, setNotes] = useState("");
-  const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const load = async (): Promise<void> => {
     try {
       setEntries(await api.get<OooEntry[]>("/v2/me/ooo"));
     } catch (error) {
       toast.error(errorMessage(error));
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -179,32 +172,10 @@ function OutOfOfficeSettings() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const create = async (): Promise<void> => {
-    if (!start) return;
-    setSaving(true);
-    try {
-      await api.post("/v2/me/ooo", {
-        start,
-        end: end ?? start,
-        reason,
-        notes: notes || undefined,
-      });
-      toast.success("Out of office added");
-      setOpen(false);
-      setStart(null);
-      setEnd(null);
-      setNotes("");
-      await load();
-    } catch (error) {
-      toast.error(errorMessage(error));
-    } finally {
-      setSaving(false);
-    }
-  };
-
   const remove = async (entry: OooEntry): Promise<void> => {
     try {
       await api.delete(`/v2/me/ooo/${entry.id}`);
+      toast.success("Out of office removed");
       await load();
     } catch (error) {
       toast.error(errorMessage(error));
@@ -217,13 +188,18 @@ function OutOfOfficeSettings() {
         title="Out of office"
         description="Block whole days — no slots are offered while you are away."
         footer={
-          <Button startIcon="plus" onClick={() => setOpen(true)}>
+          <Button startIcon="plus" onClick={() => navigate("/settings/out-of-office/new")}>
             Add
           </Button>
         }
       >
         <List>
-          {entries.length === 0 ? (
+          {loading ? (
+            <ListRow>
+              <p className="cal-hint">Loading…</p>
+            </ListRow>
+          ) : null}
+          {!loading && entries.length === 0 ? (
             <ListRow>
               <p className="cal-hint">Nothing scheduled.</p>
             </ListRow>
@@ -252,58 +228,6 @@ function OutOfOfficeSettings() {
         </List>
       </SettingsSection>
 
-      <Dialog
-        open={open}
-        onClose={() => setOpen(false)}
-        title="Add out of office"
-        description="Pick the first day, then the last day."
-        width={620}
-        footer={
-          <>
-            <Button variant="minimal" onClick={() => setOpen(false)}>
-              Cancel
-            </Button>
-            <Button loading={saving} disabled={!start} onClick={() => void create()}>
-              Save
-            </Button>
-          </>
-        }
-      >
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 220px", gap: 20 }}>
-          <MonthCalendar
-            month={month}
-            onMonthChange={setMonth}
-            selected={start}
-            timeZone={timeZone}
-            onSelect={(date) => {
-              if (!start || (start && end)) {
-                setStart(date);
-                setEnd(null);
-              } else if (date >= start) {
-                setEnd(date);
-              } else {
-                setStart(date);
-              }
-            }}
-          />
-          <div className="cal-stack">
-            <p className="cal-hint">
-              {start ? `From ${formatDateISO(start)}` : "Pick a start date"}
-              {end ? ` to ${formatDateISO(end)}` : ""}
-            </p>
-            <Select
-              label="Reason"
-              value={reason}
-              options={["unspecified", "vacation", "travel", "sick", "public_holiday"].map((value) => ({
-                value,
-                label: value.replace("_", " "),
-              }))}
-              onChange={(next) => setReason(next)}
-            />
-            <TextArea label="Notes" value={notes} onChange={(event) => setNotes(event.target.value)} />
-          </div>
-        </div>
-      </Dialog>
     </>
   );
 }

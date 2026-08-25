@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Icon, type IconName } from "../ui/Icon.tsx";
 import { Avatar } from "../ui/Layout.tsx";
 import { Popover, DropdownMenu } from "../ui/Popover.tsx";
@@ -28,8 +28,20 @@ export function Shell({ children, wide = false }: { children: ReactNode; wide?: 
   const { theme, setTheme } = useTheme();
   const [mobileOpen, setMobileOpen] = useState(false);
 
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [path]);
+
   return (
     <div className="cal-shell">
+      {mobileOpen ? (
+        <button
+          type="button"
+          className="cal-sidebar__scrim"
+          aria-label="Close navigation"
+          onClick={() => setMobileOpen(false)}
+        />
+      ) : null}
       <aside className={`cal-sidebar ${mobileOpen ? "is-open" : ""}`}>
         <div className="cal-sidebar__top">
           <Link to="/event-types" className="cal-sidebar__brand">
@@ -134,7 +146,10 @@ export function Shell({ children, wide = false }: { children: ReactNode; wide?: 
           </button>
           <span className="cal-topbar__brand">Cal</span>
         </header>
-        <main className={`cal-content ${wide ? "is-wide" : ""}`}>{children}</main>
+        {/* Keying on the path replays the entrance animation on every navigation. */}
+        <main key={path} className={`cal-content cal-animate-in ${wide ? "is-wide" : ""}`}>
+          {children}
+        </main>
       </div>
     </div>
   );

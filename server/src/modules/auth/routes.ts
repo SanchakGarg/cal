@@ -22,6 +22,12 @@ import {
   type UserRow,
 } from "../../auth/users.ts";
 import { requireAuth, currentUser } from "../../auth/middleware.ts";
+import { rateLimit } from "../../http/rate-limit.ts";
+
+// Guest login and refresh both mint sessions, so they are worth throttling even
+// in a single-tenant deployment.
+const guestLoginLimiter = rateLimit({ limit: 10, windowMs: 60_000, name: "guest login" });
+const refreshLimiter = rateLimit({ limit: 30, windowMs: 60_000, name: "token refresh" });
 
 const FLOW_COOKIE = "cal_oidc_flow";
 const flowSecret = new TextEncoder().encode(`${env.jwtSecret}:oidc-flow`);
@@ -156,9 +162,14 @@ authRouter.get(
   })
 );
 
-/** Guest login: no provider, straight to a throwaway account for local testing. */
+/** Guest login: no provider, straight to a throwaway account for local testing.
+ *
+ *  Guest login proves nothing about the caller, so it must never hand back a
+ *  session for an account that belongs to someone: a supplied email may only
+ *  ever resume a guest account, never a real (OIDC) one. */
 authRouter.post(
   "/guest",
+  guestLoginLimiter,
   handler(async (req, res) => {
     if (!env.guest.enabled) throw forbidden("Guest login is disabled");
     const body = asObject(req.body);
@@ -166,10 +177,15 @@ authRouter.post(
     const email = optStr(body, "email", { max: 200 });
     const timeZone = optTimeZone(body, "timeZone") ?? "Europe/London";
 
-    let user: UserRow | null = email ? await findUserByEmail(email) : null;
+    const existing: UserRow | null = email ? await findUserByEmail(email) : null;
+    if (existing && !existing.is_guest) {
+      throw forbidden("That email belongs to a registered account — sign in with your provider");
+    }
+
+    let user: UserRow | null = existing;
     let isNew = false;
     if (!user) {
-      if (!env.guest.autoCreate && email) throw forbidden("Guest account creation is disabled");
+      if (!env.guest.autoCreate) throw forbidden("Guest account creation is disabled");
       const suffix = randomBytes(3).toString("hex");
       user = await createUser({
         email: email ?? `guest-${suffix}@guest.local`,
@@ -199,6 +215,7 @@ authRouter.post(
 
 authRouter.post(
   "/refresh",
+  refreshLimiter,
   handler(async (req, res) => {
     const body = asObject(req.body);
     const refreshToken = optStr(body, "refreshToken");

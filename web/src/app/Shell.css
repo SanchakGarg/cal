@@ -157,9 +157,24 @@
   max-width: 100%;
 }
 
+.cal-sidebar__scrim {
+  display: none;
+}
+
 @media (max-width: 900px) {
   .cal-topbar {
     display: flex;
+  }
+
+  .cal-sidebar__scrim {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 65;
+    border: 0;
+    padding: 0;
+    background: rgb(17 24 39 / 0.4);
+    animation: cal-fade-in var(--cal-duration-fast) var(--cal-ease-out) both;
   }
 
   .cal-sidebar {
@@ -168,7 +183,7 @@
     left: 0;
     top: 0;
     transform: translateX(-100%);
-    transition: transform 160ms ease;
+    transition: transform var(--cal-duration) var(--cal-ease);
     background: var(--cal-bg);
     box-shadow: var(--cal-shadow-drop);
   }

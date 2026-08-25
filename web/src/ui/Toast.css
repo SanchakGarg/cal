@@ -1,36 +1,144 @@
 .cal-toasts {
   position: fixed;
   bottom: 20px;
-  left: 50%;
-  transform: translateX(-50%);
+  right: 20px;
   z-index: 120;
   display: flex;
   flex-direction: column;
   gap: 8px;
+  width: min(380px, calc(100vw - 40px));
   pointer-events: none;
 }
 
 .cal-toast {
   display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 14px;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 12px 12px 14px;
   border-radius: var(--cal-radius);
-  background: var(--cal-bg-inverted);
-  color: var(--cal-text-inverted);
+  border: 1px solid var(--cal-border-subtle);
+  background: var(--cal-bg);
+  color: var(--cal-text-emphasis);
   box-shadow: var(--cal-shadow-drop);
   font-size: 13px;
-  animation: cal-toast-in 160ms ease;
+  pointer-events: auto;
+  animation: cal-slide-in-right var(--cal-duration) var(--cal-ease-out) both;
+}
+
+.cal-toast.is-leaving {
+  animation: cal-slide-out-right 180ms var(--cal-ease) forwards;
+}
+
+.cal-toast__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  flex: none;
+  margin-top: 1px;
+  background: var(--cal-bg-muted);
+  color: var(--cal-text-subtle);
+}
+
+.cal-toast__text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.cal-toast__title {
+  font-weight: 500;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.cal-toast__description {
+  font-size: 12px;
+  color: var(--cal-text-subtle);
+  overflow-wrap: anywhere;
+}
+
+.cal-toast__action {
+  flex: none;
+  align-self: center;
+  height: 26px;
+  padding: 0 10px;
+  border: 1px solid var(--cal-border);
+  border-radius: var(--cal-radius-sm);
+  background: var(--cal-bg);
+  color: var(--cal-text-emphasis);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.cal-toast__action:hover {
+  background: var(--cal-bg-subtle);
+}
+
+.cal-toast__close {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  margin-top: -1px;
+  border: 0;
+  border-radius: var(--cal-radius-sm);
+  background: transparent;
+  color: var(--cal-text-muted);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity var(--cal-duration-fast) ease, background var(--cal-duration-fast) ease;
+}
+
+.cal-toast:hover .cal-toast__close,
+.cal-toast__close:focus-visible {
+  opacity: 1;
+}
+
+.cal-toast__close:hover {
+  background: var(--cal-bg-muted);
+  color: var(--cal-text-emphasis);
+}
+
+.cal-toast__spin {
+  animation: cal-spin 900ms linear infinite;
+}
+
+.cal-toast--success .cal-toast__icon {
+  background: var(--cal-bg-success);
+  color: var(--cal-text-success);
 }
 
 .cal-toast--error {
-  background: var(--cal-danger);
-  color: #fff;
+  border-color: var(--cal-danger);
+}
+.cal-toast--error .cal-toast__icon {
+  background: var(--cal-bg-error);
+  color: var(--cal-text-error);
 }
 
-@keyframes cal-toast-in {
-  from {
-    opacity: 0;
-    transform: translateY(6px);
+.cal-toast--warning .cal-toast__icon {
+  background: var(--cal-bg-attention);
+  color: var(--cal-text-attention);
+}
+
+.cal-toast--info .cal-toast__icon {
+  background: var(--cal-bg-info);
+  color: var(--cal-text-info);
+}
+
+@media (max-width: 640px) {
+  .cal-toasts {
+    right: 12px;
+    left: 12px;
+    bottom: 12px;
+    width: auto;
   }
 }

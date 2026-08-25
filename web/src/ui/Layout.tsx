@@ -6,7 +6,6 @@ interface PageHeaderProps {
   title: string;
   subtitle?: string;
   actions?: ReactNode;
-  backHref?: string;
   onBack?: () => void;
 }
 
@@ -112,8 +111,64 @@ export function EmptyState({
   );
 }
 
-export function Skeleton({ height = 16, width = "100%", radius = 6 }: { height?: number; width?: number | string; radius?: number }) {
-  return <span className="cal-skeleton" style={{ height, width, borderRadius: radius }} />;
+export function Skeleton({
+  height = 16,
+  width = "100%",
+  radius = 6,
+  variant = "rect",
+  className = "",
+}: {
+  height?: number | string;
+  width?: number | string;
+  radius?: number;
+  variant?: "rect" | "text" | "circle";
+  className?: string;
+}) {
+  const resolvedRadius = variant === "circle" ? "50%" : radius;
+  const resolvedHeight = variant === "text" ? 12 : height;
+  return (
+    <span
+      className={`cal-skeleton cal-skeleton--${variant} ${className}`}
+      aria-hidden="true"
+      style={{
+        height: resolvedHeight,
+        width: variant === "circle" ? resolvedHeight : width,
+        borderRadius: resolvedRadius,
+      }}
+    />
+  );
+}
+
+/** A paragraph-shaped placeholder; the last line is shortened so it reads as text. */
+export function SkeletonText({ lines = 3, width = "100%" }: { lines?: number; width?: number | string }) {
+  return (
+    <span className="cal-skeleton-text" aria-hidden="true">
+      {Array.from({ length: lines }, (_line, index) => (
+        <Skeleton
+          key={index}
+          variant="text"
+          width={index === lines - 1 ? "62%" : width}
+        />
+      ))}
+    </span>
+  );
+}
+
+/** Row placeholders that match the shape of `List` while data loads. */
+export function SkeletonList({ rows = 3, height = 44 }: { rows?: number; height?: number }) {
+  return (
+    <List>
+      {Array.from({ length: rows }, (_row, index) => (
+        <ListRow key={index}>
+          <Skeleton variant="circle" height={32} />
+          <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 8 }}>
+            <Skeleton height={height / 4} width="40%" />
+            <Skeleton height={height / 5} width="65%" />
+          </div>
+        </ListRow>
+      ))}
+    </List>
+  );
 }
 
 interface TabsProps<T extends string> {
@@ -182,11 +237,22 @@ export function ListRow({
   return (
     <div
       className={`cal-list-row ${onClick ? "is-clickable" : ""} ${className}`}
-      onClick={onClick}
-      role={onClick ? "button" : undefined}
+      onClick={
+        onClick
+          ? (event) => {
+              // Nested controls (switches, menus, links) own their own clicks.
+              const target = event.target as HTMLElement;
+              if (target.closest("button, a, input, select, textarea, [role='button']") !== null) {
+                return;
+              }
+              onClick();
+            }
+          : undefined
+      }
       tabIndex={onClick ? 0 : undefined}
       onKeyDown={(event) => {
-        if (onClick && (event.key === "Enter" || event.key === " ")) {
+        if (!onClick || event.target !== event.currentTarget) return;
+        if (event.key === "Enter" || event.key === " ") {
           event.preventDefault();
           onClick();
         }

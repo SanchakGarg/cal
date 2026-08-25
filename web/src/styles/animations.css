@@ -1,0 +1,109 @@
+/* Shared motion primitives. Every animation here is opt-out under
+   prefers-reduced-motion so the app stays usable without movement. */
+
+:root {
+  --cal-ease: cubic-bezier(0.32, 0.72, 0, 1);
+  --cal-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --cal-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --cal-duration-fast: 120ms;
+  --cal-duration: 180ms;
+  --cal-duration-slow: 260ms;
+}
+
+@keyframes cal-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes cal-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes cal-zoom-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.97);
+  }
+}
+
+@keyframes cal-zoom-out {
+  to {
+    opacity: 0;
+    transform: translateY(4px) scale(0.98);
+  }
+}
+
+@keyframes cal-slide-down {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+  }
+}
+
+@keyframes cal-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(4px) scale(0.98);
+  }
+}
+
+@keyframes cal-slide-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(16px);
+  }
+}
+
+@keyframes cal-slide-out-right {
+  to {
+    opacity: 0;
+    transform: translateX(16px);
+  }
+}
+
+@keyframes cal-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes cal-shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+
+@keyframes cal-ripple {
+  to {
+    opacity: 0;
+    transform: scale(2.4);
+  }
+}
+
+@keyframes cal-pop {
+  50% {
+    transform: scale(1.12);
+  }
+}
+
+/* Page-level entrance, applied by the shell to routed content. */
+.cal-animate-in {
+  animation: cal-slide-up var(--cal-duration-slow) var(--cal-ease-out) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

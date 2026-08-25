@@ -1,0 +1,79 @@
+.cal-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--cal-border-subtle);
+  border-radius: var(--cal-radius);
+  background: var(--cal-bg-subtle);
+  color: var(--cal-text);
+  font-size: 13px;
+  animation: cal-fade-in var(--cal-duration) var(--cal-ease-out) both;
+}
+
+.cal-alert__icon {
+  display: inline-flex;
+  flex: none;
+  margin-top: 1px;
+  color: var(--cal-text-subtle);
+}
+
+.cal-alert__text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.cal-alert__title {
+  color: var(--cal-text-emphasis);
+  font-size: 13px;
+}
+
+.cal-alert__body {
+  color: var(--cal-text-subtle);
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+.cal-alert__action {
+  flex: none;
+  align-self: center;
+}
+
+.cal-alert--info {
+  background: var(--cal-bg-info);
+  border-color: transparent;
+}
+.cal-alert--info .cal-alert__icon,
+.cal-alert--info .cal-alert__title {
+  color: var(--cal-text-info);
+}
+
+.cal-alert--success {
+  background: var(--cal-bg-success);
+  border-color: transparent;
+}
+.cal-alert--success .cal-alert__icon,
+.cal-alert--success .cal-alert__title {
+  color: var(--cal-text-success);
+}
+
+.cal-alert--warning {
+  background: var(--cal-bg-attention);
+  border-color: transparent;
+}
+.cal-alert--warning .cal-alert__icon,
+.cal-alert--warning .cal-alert__title {
+  color: var(--cal-text-attention);
+}
+
+.cal-alert--error {
+  background: var(--cal-bg-error);
+  border-color: transparent;
+}
+.cal-alert--error .cal-alert__icon,
+.cal-alert--error .cal-alert__title {
+  color: var(--cal-text-error);
+}

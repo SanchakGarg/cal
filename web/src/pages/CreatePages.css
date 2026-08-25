@@ -1,0 +1,66 @@
+/* Shared shell for the full-page create/confirm flows. */
+.cal-form-page {
+  max-width: 680px;
+  margin: 0 auto;
+  animation: cal-slide-up var(--cal-duration-slow) var(--cal-ease-out) both;
+}
+
+.cal-form-page__card {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.cal-form-page__section {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.cal-form-page__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.cal-form-page__footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-top: 16px;
+  border-top: 1px solid var(--cal-border-subtle);
+}
+
+.cal-form-page__summary {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px 16px;
+  border-radius: var(--cal-radius);
+  background: var(--cal-bg-subtle);
+  border: 1px solid var(--cal-border-subtle);
+  font-size: 13px;
+}
+
+.cal-form-page__summary dt {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--cal-text-muted);
+}
+
+.cal-form-page__summary dd {
+  margin: 0 0 8px;
+  color: var(--cal-text-emphasis);
+}
+
+.cal-form-page__summary dd:last-child {
+  margin-bottom: 0;
+}
+
+@media (max-width: 720px) {
+  .cal-form-page__grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

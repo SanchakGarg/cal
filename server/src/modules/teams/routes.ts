@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { query, queryOne } from "../../db/pool.ts";
-import { badRequest, notFound } from "../../http/errors.ts";
+import { badRequest, forbidden, notFound } from "../../http/errors.ts";
 import { handler, ok } from "../../http/respond.ts";
 import {
   asObject,
@@ -13,7 +13,7 @@ import {
   paramInt,
   str,
 } from "../../http/validate.ts";
-import { assertTeamRole, currentUser, requireAuth } from "../../auth/middleware.ts";
+import { assertTeamRole, currentUser, requireAuth, type TeamRole } from "../../auth/middleware.ts";
 import { parseEventTypeInput } from "../event-types/input.ts";
 import {
   createEventType,
@@ -42,6 +42,36 @@ import {
 } from "./repo.ts";
 
 const ROLES = ["OWNER", "ADMIN", "MEMBER"] as const;
+
+/** An ADMIN must not be able to mint an OWNER — that is a privilege escalation. */
+export function assertMayAssignRole(actorRole: TeamRole, target: string | undefined): void {
+  if (target === "OWNER" && actorRole !== "OWNER") {
+    throw forbidden("Only an owner can grant the owner role");
+  }
+}
+
+/** Nor may an ADMIN demote or remove an OWNER, and the last OWNER must remain. */
+export async function assertMayChangeMembership(
+  actorRole: TeamRole,
+  teamId: number,
+  membershipId: number
+): Promise<void> {
+  const target = await queryOne<{ role: TeamRole }>(
+    "SELECT role FROM memberships WHERE team_id = $1 AND id = $2",
+    [teamId, membershipId]
+  );
+  if (!target) throw notFound("Membership not found");
+  if (target.role !== "OWNER") return;
+
+  if (actorRole !== "OWNER") throw forbidden("Only an owner can change another owner");
+  const owners = await queryOne<{ count: string }>(
+    "SELECT count(*)::text AS count FROM memberships WHERE team_id = $1 AND role = 'OWNER'",
+    [teamId]
+  );
+  if (Number(owners?.count ?? 0) <= 1) {
+    throw badRequest("A team must keep at least one owner");
+  }
+}
 
 export function parseTeamInput(raw: unknown, opts: { partial?: boolean } = {}) {
   const body = asObject(raw);
@@ -158,14 +188,20 @@ teamsRouter.post(
   "/:teamId/memberships",
   handler(async (req, res) => {
     const teamId = paramInt(req.params.teamId, "teamId");
-    await assertTeamRole(currentUser(req).id, teamId, ["OWNER", "ADMIN"]);
+    const actorRole = await assertTeamRole(currentUser(req).id, teamId, ["OWNER", "ADMIN"]);
     const body = asObject(req.body);
+    const role = oneOf(body, "role", ROLES);
+    assertMayAssignRole(actorRole, role);
+    const userId = optInt(body, "userId");
+    if (userId === undefined) throw badRequest("userId is required");
     ok(
       res,
       await addMembership(teamId, {
-        userId: optInt(body, "userId") ?? 0,
-        role: oneOf(body, "role", ROLES),
-        accepted: optBool(body, "accepted"),
+        userId,
+        role,
+        // Being added to a team is an invitation: the invitee accepts it, the
+        // admin does not accept it on their behalf.
+        accepted: false,
       }),
       201
     );
@@ -176,12 +212,16 @@ teamsRouter.patch(
   "/:teamId/memberships/:membershipId",
   handler(async (req, res) => {
     const teamId = paramInt(req.params.teamId, "teamId");
-    await assertTeamRole(currentUser(req).id, teamId, ["OWNER", "ADMIN"]);
+    const actorRole = await assertTeamRole(currentUser(req).id, teamId, ["OWNER", "ADMIN"]);
+    const membershipId = paramInt(req.params.membershipId, "membershipId");
     const body = asObject(req.body);
+    const role = oneOf(body, "role", ROLES);
+    assertMayAssignRole(actorRole, role);
+    if (role) await assertMayChangeMembership(actorRole, teamId, membershipId);
     ok(
       res,
-      await updateMembership(teamId, paramInt(req.params.membershipId, "membershipId"), {
-        role: oneOf(body, "role", ROLES),
+      await updateMembership(teamId, membershipId, {
+        role,
         accepted: optBool(body, "accepted"),
         disableImpersonation: optBool(body, "disableImpersonation"),
       })
@@ -193,8 +233,9 @@ teamsRouter.delete(
   "/:teamId/memberships/:membershipId",
   handler(async (req, res) => {
     const teamId = paramInt(req.params.teamId, "teamId");
-    await assertTeamRole(currentUser(req).id, teamId, ["OWNER", "ADMIN"]);
+    const actorRole = await assertTeamRole(currentUser(req).id, teamId, ["OWNER", "ADMIN"]);
     const membershipId = paramInt(req.params.membershipId, "membershipId");
+    await assertMayChangeMembership(actorRole, teamId, membershipId);
     await removeMembership(teamId, membershipId);
     ok(res, { id: membershipId });
   })
@@ -204,15 +245,15 @@ teamsRouter.post(
   "/:teamId/invite",
   handler(async (req, res) => {
     const teamId = paramInt(req.params.teamId, "teamId");
-    await assertTeamRole(currentUser(req).id, teamId, ["OWNER", "ADMIN"]);
+    const actorRole = await assertTeamRole(currentUser(req).id, teamId, ["OWNER", "ADMIN"]);
     const body = asObject(req.body);
     const raw = body.email !== undefined ? [body] : array(body, "invites", { required: true });
+    if (raw.length > 50) throw badRequest("At most 50 invites can be sent at once");
     const invites = raw.map((entry, index) => {
       const item = asObject(entry, `invites[${index}]`);
-      return {
-        email: str(item, "email", { max: 200 }),
-        role: oneOf(item, "role", ROLES),
-      };
+      const role = oneOf(item, "role", ROLES);
+      assertMayAssignRole(actorRole, role);
+      return { email: str(item, "email", { max: 200 }), role };
     });
     ok(res, await inviteToTeam(teamId, invites), 201);
   })

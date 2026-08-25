@@ -2,7 +2,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "../ui/Button.tsx";
 import { MonthCalendar } from "../ui/Calendar.tsx";
-import { Checkbox, TextArea, TextField } from "../ui/Field.tsx";
+import { TextArea, TextField } from "../ui/Field.tsx";
+import { BookingFieldInput } from "../ui/BookingFieldInput.tsx";
 import { Avatar, AvatarGroup, Badge, SegmentedControl, Skeleton } from "../ui/Layout.tsx";
 import { Select } from "../ui/Select.tsx";
 import { TimezoneSelect } from "../ui/TimePickers.tsx";
@@ -11,6 +12,7 @@ import { Icon } from "../ui/Icon.tsx";
 import { locationIcon, locationLabel } from "../ui/LocationPicker.tsx";
 import { useToast } from "../ui/Toast.tsx";
 import { api, errorMessage } from "../lib/api.ts";
+import { safeExternalUrl } from "../lib/url.ts";
 import type { Booking, EventType, PublicProfile, PublicTeamProfile, SlotMap } from "../lib/types.ts";
 import {
   addDaysISO,
@@ -201,8 +203,10 @@ export function BookerPage({ username, teamSlug, eventSlug, rescheduleUid }: Boo
         },
         { auth: false }
       );
-      if (eventType.successRedirectUrl) {
-        window.location.href = eventType.successRedirectUrl;
+      // The redirect target is owner-supplied, so only follow real http(s) links.
+      const redirectTo = safeExternalUrl(eventType.successRedirectUrl);
+      if (redirectTo) {
+        window.location.href = redirectTo;
         return;
       }
       navigate(`/booking/${created.uid}`);
@@ -338,55 +342,14 @@ export function BookerPage({ username, teamSlug, eventSlug, rescheduleUid }: Boo
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
               />
-              {customFields.map((field) => {
-                const label = field.label ?? field.slug;
-                if (field.type === "boolean") {
-                  return (
-                    <Checkbox
-                      key={field.slug}
-                      label={label}
-                      checked={Boolean(responses[field.slug])}
-                      onChange={(event) =>
-                        setResponses({ ...responses, [field.slug]: event.target.checked })
-                      }
-                    />
-                  );
-                }
-                if (["select", "radio"].includes(field.type)) {
-                  return (
-                    <Select
-                      key={field.slug}
-                      label={label}
-                      value={(responses[field.slug] as string) ?? null}
-                      options={(field.options ?? []).map((option) => ({ value: option, label: option }))}
-                      onChange={(next) => setResponses({ ...responses, [field.slug]: next })}
-                    />
-                  );
-                }
-                if (field.type === "textarea") {
-                  return (
-                    <TextArea
-                      key={field.slug}
-                      label={label}
-                      required={field.required}
-                      value={(responses[field.slug] as string) ?? ""}
-                      onChange={(event) =>
-                        setResponses({ ...responses, [field.slug]: event.target.value })
-                      }
-                    />
-                  );
-                }
-                return (
-                  <TextField
-                    key={field.slug}
-                    label={label}
-                    required={field.required}
-                    type={field.type === "number" ? "number" : field.type === "url" ? "url" : "text"}
-                    value={(responses[field.slug] as string) ?? ""}
-                    onChange={(event) => setResponses({ ...responses, [field.slug]: event.target.value })}
-                  />
-                );
-              })}
+              {customFields.map((field) => (
+                <BookingFieldInput
+                  key={field.slug}
+                  field={field}
+                  value={responses[field.slug]}
+                  onChange={(next) => setResponses({ ...responses, [field.slug]: next })}
+                />
+              ))}
               <TextArea
                 label="Additional notes"
                 placeholder="Please share anything that will help prepare for our meeting."

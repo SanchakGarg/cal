@@ -57,7 +57,9 @@ Open <http://localhost:5173>. The login page shows **Continue as guest** (becaus
     `/settings/organization/members` to add people, group them into teams and inspect each
     member's schedules.
 
-Seeded accounts you can sign in as (guest login accepts a known email and reuses that user):
+Seeded accounts you can sign in as. They are created as guest accounts, and guest login
+only ever resumes a guest account — passing the email of a real (OIDC) user is refused
+rather than logging you in as them:
 
 | email | availability |
 |---|---|

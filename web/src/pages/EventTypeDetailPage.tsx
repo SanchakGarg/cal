@@ -7,9 +7,12 @@ import { LocationPicker } from "../ui/LocationPicker.tsx";
 import { QuestionBuilder } from "../ui/QuestionBuilder.tsx";
 import { MultiSelect, Select } from "../ui/Select.tsx";
 import { Switch } from "../ui/Switch.tsx";
+import { Tooltip } from "../ui/Tooltip.tsx";
+import { Alert } from "../ui/Alert.tsx";
 import { Icon, type IconName } from "../ui/Icon.tsx";
 import { useToast } from "../ui/Toast.tsx";
 import { api, errorMessage } from "../lib/api.ts";
+import { openExternal } from "../lib/url.ts";
 import type { BookingField, EventType, EventTypeLocation, Membership, Schedule } from "../lib/types.ts";
 import { useAuth } from "../app/auth.tsx";
 import { useRouter } from "../app/router.tsx";
@@ -25,6 +28,25 @@ const TAB_META: Array<{ value: TabKey; label: string; hint: string; icon: IconNa
   { value: "recurring", label: "Recurring", hint: "Repeat this event", icon: "refresh" },
   { value: "team", label: "Assignment", hint: "Hosts and scheduling", icon: "users" },
 ];
+
+/** Mirrors the server's rule so the problem shows up before Save is pressed. */
+function redirectError(value: string | null | undefined): string | undefined {
+  const raw = (value ?? "").trim();
+  if (!raw) return undefined;
+  try {
+    const parsed = new URL(raw);
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+      return "Only http and https links are allowed";
+    }
+  } catch {
+    return "Enter a full URL, including https://";
+  }
+  return undefined;
+}
+
+function backTargetFor(teamId: number | null): string {
+  return teamId ? `/teams/${teamId}/event-types` : "/event-types";
+}
 
 export function EventTypeDetailPage({
   eventTypeId,
@@ -86,6 +108,11 @@ export function EventTypeDetailPage({
     }
   };
 
+  const leave = (): void => {
+    if (dirty && !window.confirm("You have unsaved changes. Leave without saving?")) return;
+    navigate(backTargetFor(owningTeamId));
+  };
+
   const publicLink = useMemo(() => {
     if (!eventType) return "";
     const slug = String(value("slug", eventType.slug));
@@ -109,27 +136,36 @@ export function EventTypeDetailPage({
   }
 
   const tabs = TAB_META.filter((entry) => entry.value !== "team" || eventType.teamId !== null);
-  const backTarget = owningTeamId ? `/teams/${owningTeamId}/event-types` : "/event-types";
 
   return (
     <>
       <PageHeader
         title={String(value("title", eventType.title))}
         subtitle={publicLink.replace(`${window.location.origin}`, "")}
-        onBack={() => navigate(backTarget)}
+        onBack={leave}
         actions={
           <>
-            <Switch
-              checked={!value("hidden", eventType.hidden)}
-              onChange={(checked) => set("hidden", !checked)}
-              size="sm"
-            />
+            <Tooltip
+              content={
+                value("hidden", eventType.hidden)
+                  ? "Hidden — the booking link still works but the event is not listed"
+                  : "Visible on your public page"
+              }
+            >
+              <span className="cal-row">
+                <Switch
+                  checked={!value("hidden", eventType.hidden)}
+                  onChange={(checked) => set("hidden", !checked)}
+                  size="sm"
+                />
+              </span>
+            </Tooltip>
             <CopyButton value={publicLink} />
             <IconButton
               icon="external"
               label="Preview"
               variant="secondary"
-              onClick={() => window.open(publicLink, "_blank")}
+              onClick={() => openExternal(publicLink)}
             />
             <Button loading={saving} disabled={!dirty} onClick={() => void save()}>
               Save
@@ -175,7 +211,7 @@ export function EventTypeDetailPage({
       </div>
 
       {dirty ? (
-        <div className="cal-event-editor__bar" role="status">
+        <div className="cal-unsaved-bar" role="status">
           <span>Unsaved changes</span>
           <div className="cal-row">
             <Button variant="minimal" onClick={() => setDraft({})}>
@@ -489,6 +525,10 @@ function AdvancedTab({ eventType, value, set, eventTypeId }: TabProps & { eventT
         title="Booking questions"
         description="Name and email are always asked. Add your own questions and reorder them."
       >
+        <Alert tone="info" icon="info">
+          Dropdowns, multiple choice, checkboxes, ratings, dates and times are all available. Answers
+          are validated against the question when a booking comes in.
+        </Alert>
         <QuestionBuilder
           fields={value<BookingField[]>("bookingFields", eventType.bookingFields)}
           onChange={(next) => set("bookingFields", next)}
@@ -580,6 +620,8 @@ function AdvancedTab({ eventType, value, set, eventTypeId }: TabProps & { eventT
         <TextField
           label="Redirect on booking"
           placeholder="https://example.com/thank-you"
+          hint="Must be an absolute http(s) URL. Leave empty to show the confirmation page."
+          error={redirectError(value("successRedirectUrl", eventType.successRedirectUrl))}
           value={value("successRedirectUrl", eventType.successRedirectUrl) ?? ""}
           onChange={(event) => set("successRedirectUrl", event.target.value)}
         />

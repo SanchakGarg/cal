@@ -18,13 +18,34 @@ import { webhooksRouter } from "./modules/webhooks/routes.ts";
 export function createApp(): express.Express {
   const app = express();
 
+  // Nothing good comes of telling callers which server this is.
+  app.disable("x-powered-by");
+  // Trust only the immediate proxy, so `req.ip` cannot be spoofed by a client
+  // that simply sets `x-forwarded-for` itself.
+  app.set("trust proxy", 1);
+
   app.use(express.json({ limit: "1mb" }));
-  app.use(express.urlencoded({ extended: false }));
+  app.use(express.urlencoded({ extended: false, limit: "1mb" }));
+
+  app.use((_req, res, next) => {
+    res.setHeader("x-content-type-options", "nosniff");
+    res.setHeader("referrer-policy", "strict-origin-when-cross-origin");
+    res.setHeader("x-frame-options", "SAMEORIGIN");
+    res.setHeader("cross-origin-opener-policy", "same-origin");
+    res.setHeader("permissions-policy", "camera=(), microphone=(), geolocation=()");
+    next();
+  });
 
   app.use((req, res, next) => {
     const origin = req.header("origin");
-    if (origin === env.webOrigin || env.webOrigin === "*") {
-      res.setHeader("access-control-allow-origin", origin ?? "*");
+    // A wildcard origin cannot be combined with credentials — browsers reject it,
+    // and echoing an arbitrary origin back with credentials defeats CORS entirely.
+    if (env.webOrigin === "*") {
+      res.setHeader("access-control-allow-origin", "*");
+      res.setHeader("access-control-allow-headers", "authorization, content-type, cal-api-version");
+      res.setHeader("access-control-allow-methods", "GET, POST, PATCH, PUT, DELETE, OPTIONS");
+    } else if (origin === env.webOrigin) {
+      res.setHeader("access-control-allow-origin", origin);
       res.setHeader("vary", "origin");
       res.setHeader("access-control-allow-credentials", "true");
       res.setHeader("access-control-allow-headers", "authorization, content-type, cal-api-version");
@@ -61,6 +82,8 @@ export function createApp(): express.Express {
     if (existsSync(dist)) {
       app.use(express.static(dist, { index: false, maxAge: "1h" }));
       app.get(/^(?!\/v2\/|\/health).*/, (_req, res) => {
+        // The SPA shell must never be cached as a specific route's content.
+        res.setHeader("cache-control", "no-cache");
         res.sendFile(join(dist, "index.html"));
       });
       console.log(`serving web app from ${dist}`);

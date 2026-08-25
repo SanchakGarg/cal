@@ -15,12 +15,15 @@ import {
   str,
 } from "../../http/validate.ts";
 import { currentUser, optionalAuth, requireAuth } from "../../auth/middleware.ts";
+import { env } from "../../env.ts";
+import { rateLimit } from "../../http/rate-limit.ts";
 import { calendarLinks } from "../../lib/ics.ts";
 import type { BookingRow, EventTypeRow } from "../serialize.ts";
 import { resolveEventTypeFromQuery } from "../slots/routes.ts";
 import {
   type AttendeeInput,
   assertBookingAccess,
+  loadBookingRow,
   cancelBooking,
   createBooking,
   loadBooking,
@@ -91,10 +94,15 @@ async function requireVerifiedEmail(eventType: EventTypeRow, email: string, code
   await query("INSERT INTO verified_emails (email) VALUES ($1)", [email]);
 }
 
+// Unauthenticated endpoints that send or check codes for an arbitrary email.
+const verificationLimiter = rateLimit({ limit: 5, windowMs: 60_000, name: "verification code" });
+const bookingCreateLimiter = rateLimit({ limit: 20, windowMs: 60_000, name: "booking" });
+
 export const bookingsRouter: Router = Router();
 
 bookingsRouter.post(
   "/",
+  bookingCreateLimiter,
   optionalAuth,
   handler(async (req, res) => {
     const body = asObject(req.body);
@@ -240,6 +248,7 @@ bookingsRouter.get(
 
 bookingsRouter.post(
   "/verification/email/send-code",
+  verificationLimiter,
   handler(async (req, res) => {
     const body = asObject(req.body);
     const email = str(body, "email", { max: 200 });
@@ -249,14 +258,21 @@ bookingsRouter.post(
        VALUES ($1, $2, now() + interval '15 minutes')`,
       [email, code]
     );
-    // No mail transport in this build: the code is returned so it can be tested.
+    // No mail transport in this build, so the code only reaches the server log.
+    // Returning it in the response would make the whole check pointless, so that
+    // happens only behind an explicit opt-in flag.
     console.log(`[verification] ${email} -> ${code}`);
-    ok(res, { sent: true, email, devCode: code });
+    ok(res, {
+      sent: true,
+      email,
+      ...(env.exposeVerificationCodes ? { devCode: code } : {}),
+    });
   })
 );
 
 bookingsRouter.post(
   "/verification/email/verify-code",
+  verificationLimiter,
   handler(async (req, res) => {
     const body = asObject(req.body);
     const email = str(body, "email", { max: 200 });
@@ -461,6 +477,9 @@ bookingsRouter.get(
   "/:bookingUid/attendees",
   requireAuth,
   handler(async (req, res) => {
+    const user = currentUser(req);
+    const row = await loadBookingRow(String(req.params.bookingUid));
+    await assertBookingAccess(row, { userId: user.id, email: user.email });
     const booking = await loadBooking(String(req.params.bookingUid));
     ok(res, booking.attendees);
   })
@@ -477,6 +496,11 @@ bookingsRouter.post(
       }
       return guest;
     });
+    if (guests.length > 20) throw badRequest("At most 20 guests can be added at once");
+
+    const booking = await loadBookingRow(String(req.params.bookingUid));
+    await assertBookingAccess(booking, actorFrom(req, body));
+
     const row = await queryOne<{ id: number; time_zone: string }>(
       `SELECT b.id, COALESCE(a.time_zone, 'UTC') AS time_zone
        FROM bookings b
@@ -509,5 +533,3 @@ bookingsRouter.get(
     ok(res, await loadBooking(row.uid));
   })
 );
-
-void assertBookingAccess;

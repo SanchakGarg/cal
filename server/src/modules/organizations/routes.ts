@@ -31,7 +31,7 @@ import {
   updateMembership,
   updateTeam,
 } from "../teams/repo.ts";
-import { parseTeamInput } from "../teams/routes.ts";
+import { assertMayAssignRole, assertMayChangeMembership, parseTeamInput } from "../teams/routes.ts";
 import {
   createSchedule,
   deleteSchedule,
@@ -133,9 +133,11 @@ organizationsRouter.post(
   "/:orgId/users",
   handler(async (req, res) => {
     const orgId = paramInt(req.params.orgId, "orgId");
-    await assertOrgRole(currentUser(req).id, orgId, ["OWNER", "ADMIN"]);
+    const actorRole = await assertOrgRole(currentUser(req).id, orgId, ["OWNER", "ADMIN"]);
     const body = asObject(req.body);
     const email = str(body, "email", { max: 200 });
+    const newRole = oneOf(body, "role", ROLES);
+    assertMayAssignRole(actorRole, newRole);
 
     let user = await queryOne<{ id: number }>("SELECT id FROM users WHERE lower(email) = lower($1)", [
       email,
@@ -151,7 +153,7 @@ organizationsRouter.post(
     }
     const membership = await addMembership(orgId, {
       userId: user.id,
-      role: oneOf(body, "role", ROLES),
+      role: newRole,
       accepted: optBool(body, "accepted") ?? true,
     });
     ok(res, membership, 201);
@@ -162,7 +164,7 @@ organizationsRouter.patch(
   "/:orgId/users/:userId",
   handler(async (req, res) => {
     const orgId = paramInt(req.params.orgId, "orgId");
-    await assertOrgRole(currentUser(req).id, orgId, ["OWNER", "ADMIN"]);
+    const actorRole = await assertOrgRole(currentUser(req).id, orgId, ["OWNER", "ADMIN"]);
     const userId = paramInt(req.params.userId, "userId");
     await assertOrgMember(orgId, userId);
     const body = asObject(req.body);
@@ -192,11 +194,15 @@ organizationsRouter.patch(
     );
     const role = oneOf(body, "role", ROLES);
     if (role) {
+      assertMayAssignRole(actorRole, role);
       const membership = await queryOne<{ id: number }>(
         "SELECT id FROM memberships WHERE team_id = $1 AND user_id = $2",
         [orgId, userId]
       );
-      if (membership) await updateMembership(orgId, membership.id, { role });
+      if (membership) {
+        await assertMayChangeMembership(actorRole, orgId, membership.id);
+        await updateMembership(orgId, membership.id, { role });
+      }
     }
     const updated = await queryOne<UserRecord>(
       `SELECT id, username, email, name, avatar_url, bio, time_zone, week_start, time_format,
@@ -212,13 +218,14 @@ organizationsRouter.delete(
   "/:orgId/users/:userId",
   handler(async (req, res) => {
     const orgId = paramInt(req.params.orgId, "orgId");
-    await assertOrgRole(currentUser(req).id, orgId, ["OWNER", "ADMIN"]);
+    const actorRole = await assertOrgRole(currentUser(req).id, orgId, ["OWNER", "ADMIN"]);
     const userId = paramInt(req.params.userId, "userId");
     const membership = await queryOne<{ id: number }>(
       "SELECT id FROM memberships WHERE team_id = $1 AND user_id = $2",
       [orgId, userId]
     );
     if (!membership) throw notFound("That user is not a member of this organization");
+    await assertMayChangeMembership(actorRole, orgId, membership.id);
     await removeMembership(orgId, membership.id);
     await query("UPDATE users SET organization_id = NULL WHERE id = $1 AND organization_id = $2", [
       userId,
@@ -241,13 +248,17 @@ organizationsRouter.post(
   "/:orgId/memberships",
   handler(async (req, res) => {
     const orgId = paramInt(req.params.orgId, "orgId");
-    await assertOrgRole(currentUser(req).id, orgId, ["OWNER", "ADMIN"]);
+    const actorRole = await assertOrgRole(currentUser(req).id, orgId, ["OWNER", "ADMIN"]);
     const body = asObject(req.body);
+    const role = oneOf(body, "role", ROLES);
+    assertMayAssignRole(actorRole, role);
+    const userId = optInt(body, "userId");
+    if (userId === undefined) throw badRequest("userId is required");
     ok(
       res,
       await addMembership(orgId, {
-        userId: optInt(body, "userId") ?? 0,
-        role: oneOf(body, "role", ROLES),
+        userId,
+        role,
         accepted: optBool(body, "accepted") ?? true,
       }),
       201
@@ -268,12 +279,16 @@ organizationsRouter.patch(
   "/:orgId/memberships/:membershipId",
   handler(async (req, res) => {
     const orgId = paramInt(req.params.orgId, "orgId");
-    await assertOrgRole(currentUser(req).id, orgId, ["OWNER", "ADMIN"]);
+    const actorRole = await assertOrgRole(currentUser(req).id, orgId, ["OWNER", "ADMIN"]);
+    const membershipId = paramInt(req.params.membershipId, "membershipId");
     const body = asObject(req.body);
+    const role = oneOf(body, "role", ROLES);
+    assertMayAssignRole(actorRole, role);
+    if (role) await assertMayChangeMembership(actorRole, orgId, membershipId);
     ok(
       res,
-      await updateMembership(orgId, paramInt(req.params.membershipId, "membershipId"), {
-        role: oneOf(body, "role", ROLES),
+      await updateMembership(orgId, membershipId, {
+        role,
         accepted: optBool(body, "accepted"),
       })
     );
@@ -284,8 +299,9 @@ organizationsRouter.delete(
   "/:orgId/memberships/:membershipId",
   handler(async (req, res) => {
     const orgId = paramInt(req.params.orgId, "orgId");
-    await assertOrgRole(currentUser(req).id, orgId, ["OWNER", "ADMIN"]);
+    const actorRole = await assertOrgRole(currentUser(req).id, orgId, ["OWNER", "ADMIN"]);
     const membershipId = paramInt(req.params.membershipId, "membershipId");
+    await assertMayChangeMembership(actorRole, orgId, membershipId);
     await removeMembership(orgId, membershipId);
     ok(res, { id: membershipId });
   })

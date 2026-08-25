@@ -114,6 +114,12 @@ function resolveLocation(eventType: EventTypeRow, requested?: string): string {
   }
 }
 
+const SYSTEM_HANDLED_FIELDS = ["name", "email", "location", "guests", "rescheduleReason", "title"];
+/** Option types that accept more than one answer. */
+const MULTI_ANSWER_TYPES = new Set(["multiselect", "checkbox"]);
+const DATE_ANSWER_RE = /^\d{4}-\d{2}-\d{2}$/;
+const TIME_ANSWER_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
+
 /** Validates responses against the event type's booking fields. */
 export function validateBookingFields(
   eventType: EventTypeRow,
@@ -121,32 +127,84 @@ export function validateBookingFields(
 ): Record<string, unknown> {
   const fields = (eventType.booking_fields as Array<Record<string, unknown>>) ?? [];
   const validated: Record<string, unknown> = {};
+  const known = new Set<string>();
+
   for (const field of fields) {
     const slug = String(field.slug);
-    const systemHandled = ["name", "email", "location", "guests", "rescheduleReason", "title"].includes(
-      String(field.type)
-    );
+    known.add(slug);
+    const type = String(field.type);
+    const systemHandled = SYSTEM_HANDLED_FIELDS.includes(type);
     const value = responses[slug];
-    if (value === undefined || value === null || value === "") {
+
+    if (value === undefined || value === null || value === "" ||
+        (Array.isArray(value) && value.length === 0)) {
       if (field.required === true && !systemHandled) {
         throw badRequest(`bookingFieldsResponses.${slug} is required`);
       }
       continue;
     }
+
     if (Array.isArray(field.options)) {
       const options = field.options as string[];
       const values = Array.isArray(value) ? value : [value];
+      if (!MULTI_ANSWER_TYPES.has(type) && values.length > 1) {
+        throw badRequest(`bookingFieldsResponses.${slug} accepts a single answer`);
+      }
       for (const entry of values) {
         if (!options.includes(String(entry))) {
           throw badRequest(`bookingFieldsResponses.${slug} must be one of ${options.join(", ")}`);
         }
       }
+      if (new Set(values.map(String)).size !== values.length) {
+        throw badRequest(`bookingFieldsResponses.${slug} must not repeat an option`);
+      }
+      const min = typeof field.minSelections === "number" ? field.minSelections : undefined;
+      const max = typeof field.maxSelections === "number" ? field.maxSelections : undefined;
+      if (min !== undefined && values.length < min) {
+        throw badRequest(`bookingFieldsResponses.${slug} needs at least ${min} selection(s)`);
+      }
+      if (max !== undefined && values.length > max) {
+        throw badRequest(`bookingFieldsResponses.${slug} allows at most ${max} selection(s)`);
+      }
     }
+
+    if (type === "rating") {
+      const max = typeof field.maxRating === "number" ? field.maxRating : 5;
+      const score = Number(value);
+      if (!Number.isInteger(score) || score < 1 || score > max) {
+        throw badRequest(`bookingFieldsResponses.${slug} must be a whole number between 1 and ${max}`);
+      }
+      validated[slug] = score;
+      continue;
+    }
+
+    if (type === "date" && !DATE_ANSWER_RE.test(String(value))) {
+      throw badRequest(`bookingFieldsResponses.${slug} must look like 2026-08-24`);
+    }
+    if (type === "time" && !TIME_ANSWER_RE.test(String(value))) {
+      throw badRequest(`bookingFieldsResponses.${slug} must look like 14:30`);
+    }
+    if (type === "number" && !Number.isFinite(Number(value))) {
+      throw badRequest(`bookingFieldsResponses.${slug} must be a number`);
+    }
+    if (type === "multiemail") {
+      const emails = Array.isArray(value) ? value : [value];
+      for (const entry of emails) {
+        if (typeof entry !== "string" || !entry.includes("@")) {
+          throw badRequest(`bookingFieldsResponses.${slug} must contain email addresses`);
+        }
+      }
+    }
+
     validated[slug] = value;
   }
-  // Keep any extra responses so nothing the booker typed is silently dropped.
+
+  // Keep extra responses (notes and friends) but do not let an unbounded blob of
+  // attacker-chosen keys be persisted against the booking.
   for (const [key, value] of Object.entries(responses)) {
-    if (!(key in validated) && value !== undefined) validated[key] = value;
+    if (known.has(key) || value === undefined) continue;
+    if (Object.keys(validated).length >= fields.length + 10) break;
+    validated[key] = value;
   }
   return validated;
 }
@@ -454,6 +512,11 @@ function nextOccurrence(
 export interface MutationActor {
   userId?: number | null;
   email?: string | null;
+}
+
+/** The raw row, for callers that need to run an access check before presenting. */
+export async function loadBookingRow(uid: string): Promise<BookingRow> {
+  return findBookingRow(uid);
 }
 
 async function findBookingRow(uid: string): Promise<BookingRow> {

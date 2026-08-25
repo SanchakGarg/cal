@@ -8,6 +8,15 @@
   padding: 6px;
   max-height: 320px;
   overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.cal-popover--bottom {
+  animation: cal-slide-down var(--cal-duration-fast) var(--cal-ease-out) both;
+}
+
+.cal-popover--top {
+  animation: cal-slide-up var(--cal-duration-fast) var(--cal-ease-out) both;
 }
 
 .cal-menu {
@@ -32,6 +41,10 @@
 
 .cal-menu__item:hover:not(:disabled) {
   background: var(--cal-bg-muted);
+}
+
+.cal-menu__item:active:not(:disabled) {
+  background: var(--cal-bg-emphasis);
 }
 
 .cal-menu__item:disabled {

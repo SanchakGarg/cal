@@ -129,18 +129,30 @@
 
 .cal-skeleton {
   display: block;
+  flex: none;
   background: linear-gradient(90deg, var(--cal-bg-muted) 25%, var(--cal-bg-emphasis) 50%, var(--cal-bg-muted) 75%);
   background-size: 200% 100%;
   animation: cal-shimmer 1.4s ease infinite;
 }
 
-@keyframes cal-shimmer {
-  from {
-    background-position: 200% 0;
-  }
-  to {
-    background-position: -200% 0;
-  }
+.cal-skeleton-text {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.cal-list-row.is-clickable:active {
+  background: var(--cal-bg-muted);
+}
+
+.cal-list-row.is-clickable {
+  transition: background var(--cal-duration-fast) ease;
+}
+
+.cal-list-row:focus-visible {
+  outline: 2px solid var(--cal-brand);
+  outline-offset: -2px;
 }
 
 .cal-tabs {

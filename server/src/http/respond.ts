@@ -1,5 +1,6 @@
 import type { NextFunction, Request, RequestHandler, Response } from "express";
 import { ApiError } from "./errors.ts";
+import { env } from "../env.ts";
 
 // cal.com API v2 wraps everything in { status, data } / { status, error }.
 export function ok<T>(res: Response, data: T, statusCode = 200): void {
@@ -34,11 +35,19 @@ export function errorMiddleware(
     });
     return;
   }
+  // Unexpected errors carry stack traces, SQL text and column names. Log them,
+  // but never hand the detail back to the caller.
   console.error(error);
-  const message = error instanceof Error ? error.message : "Internal server error";
   res.status(500).json({
     status: "error",
-    error: { code: "InternalServerError", message },
+    error: {
+      code: "InternalServerError",
+      message: env.production
+        ? "Internal server error"
+        : error instanceof Error
+          ? error.message
+          : "Internal server error",
+    },
   });
 }
 

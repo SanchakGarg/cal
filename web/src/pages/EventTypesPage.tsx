@@ -1,22 +1,18 @@
 import { useEffect, useState } from "react";
 import { Button, IconButton } from "../ui/Button.tsx";
 import { CopyButton } from "../ui/CopyButton.tsx";
-import { ConfirmDialog, Dialog } from "../ui/Dialog.tsx";
-import { TextArea, TextField } from "../ui/Field.tsx";
-import { Badge, EmptyState, List, ListRow, PageHeader, Skeleton } from "../ui/Layout.tsx";
-import { NumberField } from "../ui/Field.tsx";
+import { ConfirmDialog } from "../ui/Dialog.tsx";
+import { Badge, EmptyState, List, ListRow, PageHeader, SkeletonList } from "../ui/Layout.tsx";
 import { DropdownMenu, Popover } from "../ui/Popover.tsx";
 import { Switch } from "../ui/Switch.tsx";
 import { useToast } from "../ui/Toast.tsx";
 import { api, errorMessage } from "../lib/api.ts";
+import { openExternal } from "../lib/url.ts";
 import type { EventType, Team } from "../lib/types.ts";
 import { durationLabel } from "../lib/time.ts";
 import { useAuth } from "../app/auth.tsx";
 import { useRouter } from "../app/router.tsx";
 import "./EventTypesPage.css";
-
-const slugify = (value: string): string =>
-  value.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
 
 export function EventTypesPage() {
   const { me } = useAuth();
@@ -25,12 +21,6 @@ export function EventTypesPage() {
 
   const [teams, setTeams] = useState<Team[]>([]);
   const [eventTypes, setEventTypes] = useState<EventType[] | null>(null);
-  const [createOpen, setCreateOpen] = useState(false);
-  const [title, setTitle] = useState("");
-  const [slug, setSlug] = useState("");
-  const [description, setDescription] = useState("");
-  const [duration, setDuration] = useState<number | "">(15);
-  const [saving, setSaving] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<EventType | null>(null);
 
   const load = async (): Promise<void> => {
@@ -52,27 +42,6 @@ export function EventTypesPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const create = async (): Promise<void> => {
-    setSaving(true);
-    try {
-      const created = await api.post<EventType>("/v2/event-types", {
-        title,
-        slug: slug || slugify(title),
-        lengthInMinutes: duration === "" ? 15 : duration,
-        description,
-      });
-      setCreateOpen(false);
-      setTitle("");
-      setSlug("");
-      setDescription("");
-      navigate(`/event-types/${created.id}`);
-    } catch (error) {
-      toast.error(errorMessage(error));
-    } finally {
-      setSaving(false);
-    }
-  };
-
   const toggleHidden = async (eventType: EventType): Promise<void> => {
     try {
       const updated = await api.patch<EventType>(`/v2/event-types/${eventType.id}`, {
@@ -88,13 +57,25 @@ export function EventTypesPage() {
 
   const duplicate = async (eventType: EventType): Promise<void> => {
     try {
-      await api.post<EventType>("/v2/event-types", {
+      const copy = await api.post<EventType>("/v2/event-types", {
         title: `${eventType.title} (copy)`,
         slug: `${eventType.slug}-copy`,
         lengthInMinutes: eventType.lengthInMinutes,
         description: eventType.description,
+        // Carry the configuration over: a copy that loses its questions and
+        // locations is not a copy.
+        locations: eventType.locations,
+        bookingFields: eventType.bookingFields,
+        scheduleId: eventType.scheduleId ?? undefined,
+        minimumBookingNotice: eventType.minimumBookingNotice,
+        beforeEventBuffer: eventType.beforeEventBuffer,
+        afterEventBuffer: eventType.afterEventBuffer,
+        hidden: true,
       });
-      toast.success("Event type duplicated");
+      toast.success("Event type duplicated", {
+        description: "The copy is hidden until you publish it.",
+        action: { label: "Open", onClick: () => navigate(`/event-types/${copy.id}`) },
+      });
       await load();
     } catch (error) {
       toast.error(errorMessage(error));
@@ -123,7 +104,7 @@ export function EventTypesPage() {
         title="Event Types"
         subtitle="Create events to share for people to book on your calendar."
         actions={
-          <Button startIcon="plus" onClick={() => setCreateOpen(true)}>
+          <Button startIcon="plus" onClick={() => navigate("/event-types/new")}>
             New
           </Button>
         }
@@ -147,20 +128,14 @@ export function EventTypesPage() {
       ) : null}
 
       {eventTypes === null ? (
-        <List>
-          {[0, 1].map((index) => (
-            <ListRow key={index}>
-              <Skeleton height={44} />
-            </ListRow>
-          ))}
-        </List>
+        <SkeletonList rows={3} />
       ) : eventTypes.length === 0 ? (
         <EmptyState
           icon="link"
           title="Create your first event type"
           description="Event types let people book time with you based on your availability."
           action={
-            <Button startIcon="plus" onClick={() => setCreateOpen(true)}>
+            <Button startIcon="plus" onClick={() => navigate("/event-types/new")}>
               New event type
             </Button>
           }
@@ -202,7 +177,7 @@ export function EventTypesPage() {
                   label="Preview"
                   variant="minimal"
                   size="sm"
-                  onClick={() => window.open(linkFor(eventType), "_blank")}
+                  onClick={() => openExternal(linkFor(eventType))}
                 />
                 <Popover
                   align="end"
@@ -229,46 +204,6 @@ export function EventTypesPage() {
           ))}
         </List>
       )}
-
-      <Dialog
-        open={createOpen}
-        onClose={() => setCreateOpen(false)}
-        title="Add a new event type"
-        description="Create an event type for people to book time with you."
-        footer={
-          <>
-            <Button variant="minimal" onClick={() => setCreateOpen(false)}>
-              Cancel
-            </Button>
-            <Button loading={saving} disabled={!title.trim()} onClick={() => void create()}>
-              Continue
-            </Button>
-          </>
-        }
-      >
-        <TextField
-          label="Title"
-          placeholder="Quick Chat"
-          value={title}
-          onChange={(event) => {
-            setTitle(event.target.value);
-            setSlug(slugify(event.target.value));
-          }}
-        />
-        <TextField
-          label="URL"
-          prefix={`/${me?.username ?? ""}/`}
-          value={slug}
-          onChange={(event) => setSlug(slugify(event.target.value))}
-        />
-        <TextArea
-          label="Description"
-          placeholder="A quick video meeting."
-          value={description}
-          onChange={(event) => setDescription(event.target.value)}
-        />
-        <NumberField label="Duration" suffix="minutes" min={1} value={duration} onValueChange={setDuration} />
-      </Dialog>
 
       <ConfirmDialog
         open={deleteTarget !== null}

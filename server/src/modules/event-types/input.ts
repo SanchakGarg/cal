@@ -104,9 +104,32 @@ const BOOKING_FIELD_TYPES = [
   "radio",
   "boolean",
   "url",
+  "date",
+  "time",
+  "rating",
 ] as const;
 
 const OPTION_FIELD_TYPES = new Set(["select", "multiselect", "checkbox", "radio"]);
+/** Option types that accept more than one answer, so selection counts apply. */
+const MULTI_SELECT_FIELD_TYPES = new Set(["multiselect", "checkbox"]);
+
+/** Bookers are sent to this URL after booking, so only real http(s) links are
+ *  allowed — a `javascript:` target would run in the booker's browser. */
+function parseRedirectUrl(value: string | undefined): string | null | undefined {
+  if (value === undefined) return undefined;
+  const trimmed = value.trim();
+  if (trimmed === "") return null;
+  let parsed: URL;
+  try {
+    parsed = new URL(trimmed);
+  } catch {
+    throw badRequest("successRedirectUrl must be an absolute http(s) URL");
+  }
+  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+    throw badRequest("successRedirectUrl must use http or https");
+  }
+  return parsed.toString();
+}
 
 function parseLocations(raw: unknown[]): unknown[] {
   return raw.map((entry, index) => {
@@ -153,9 +176,28 @@ function parseBookingFields(raw: unknown[]): unknown[] {
         if (typeof option !== "string" || option.trim() === "") {
           throw badRequest(`bookingFields[${index}].options[${optionIndex}] must be a string`);
         }
-        return option;
+        return option.trim();
       });
+      if (options.length < 2) {
+        throw badRequest(`bookingFields[${index}].options needs at least two choices`);
+      }
+      if (new Set(options).size !== options.length) {
+        throw badRequest(`bookingFields[${index}].options must be unique`);
+      }
       field.options = options;
+
+      if (MULTI_SELECT_FIELD_TYPES.has(type)) {
+        const min = optInt(item, "minSelections", { min: 0, max: options.length });
+        const max = optInt(item, "maxSelections", { min: 1, max: options.length });
+        if (min !== undefined && max !== undefined && min > max) {
+          throw badRequest(`bookingFields[${index}].minSelections cannot exceed maxSelections`);
+        }
+        if (min !== undefined) field.minSelections = min;
+        if (max !== undefined) field.maxSelections = max;
+      }
+    }
+    if (type === "rating") {
+      field.maxRating = optInt(item, "maxRating", { min: 2, max: 10 }) ?? 5;
     }
     return field;
   });
@@ -219,7 +261,7 @@ export function parseEventTypeInput(
   set("hide_calendar_notes", optBool(body, "hideCalendarNotes"));
   set("hide_calendar_event_details", optBool(body, "hideCalendarEventDetails"));
   set("hide_organizer_email", optBool(body, "hideOrganizerEmail"));
-  set("success_redirect_url", optStr(body, "successRedirectUrl", { max: 500 }));
+  set("success_redirect_url", parseRedirectUrl(optStr(body, "successRedirectUrl", { max: 500 })));
   set("custom_name", optStr(body, "customName", { max: 200 }));
   set("interface_language", optStr(body, "interfaceLanguage", { max: 10 }));
   set("allow_rescheduling_past_bookings", optBool(body, "allowReschedulingPastBookings"));

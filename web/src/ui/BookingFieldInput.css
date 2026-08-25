@@ -1,0 +1,46 @@
+.cal-checkbox-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--cal-border);
+  border-radius: var(--cal-radius-sm);
+  background: var(--cal-bg);
+}
+
+.cal-rating {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.cal-rating__star {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--cal-border);
+  border-radius: var(--cal-radius-sm);
+  background: var(--cal-bg);
+  color: var(--cal-text-subtle);
+  font-size: 13px;
+  cursor: pointer;
+  transition: background var(--cal-duration-fast) ease, color var(--cal-duration-fast) ease,
+    border-color var(--cal-duration-fast) ease, transform var(--cal-duration-fast) var(--cal-ease);
+}
+
+.cal-rating__star:hover {
+  border-color: var(--cal-border-emphasis);
+}
+
+.cal-rating__star:active {
+  transform: scale(0.94);
+}
+
+.cal-rating__star.is-on {
+  background: var(--cal-brand);
+  border-color: var(--cal-brand);
+  color: var(--cal-brand-text);
+  animation: cal-pop var(--cal-duration) var(--cal-ease-spring);
+}

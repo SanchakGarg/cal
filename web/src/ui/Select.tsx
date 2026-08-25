@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Icon } from "./Icon.tsx";
 import { FieldShell } from "./Field.tsx";
 import { Popover } from "./Popover.tsx";
@@ -39,6 +39,7 @@ export function Select<T extends string | number>({
   const [search, setSearch] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
   const searchRef = useRef<HTMLInputElement | null>(null);
+  const listRef = useRef<HTMLDivElement | null>(null);
 
   const selected = options.find((option) => option.value === value) ?? null;
   const filtered = useMemo(() => {
@@ -46,6 +47,18 @@ export function Select<T extends string | number>({
     const needle = search.trim().toLowerCase();
     return options.filter((option) => option.label.toLowerCase().includes(needle));
   }, [options, search]);
+
+  // Keep the keyboard cursor visible in long lists (time zones, durations).
+  useEffect(() => {
+    const list = listRef.current;
+    if (!list) return;
+    const active = list.children[activeIndex] as HTMLElement | undefined;
+    active?.scrollIntoView({ block: "nearest" });
+  }, [activeIndex]);
+
+  const moveActive = (delta: number): void => {
+    setActiveIndex((index) => Math.max(0, Math.min(index + delta, filtered.length - 1)));
+  };
 
   return (
     <FieldShell label={label} hint={hint}>
@@ -57,10 +70,12 @@ export function Select<T extends string | number>({
             ref={ref as (node: HTMLButtonElement | null) => void}
             className={`cal-select cal-select--${size} ${open ? "is-open" : ""}`}
             disabled={disabled}
+            aria-haspopup="listbox"
+            aria-expanded={open}
             onClick={() => {
               toggle();
               setSearch("");
-              setActiveIndex(0);
+              setActiveIndex(Math.max(0, options.findIndex((option) => option.value === value)));
               requestAnimationFrame(() => searchRef.current?.focus());
             }}
           >
@@ -72,7 +87,25 @@ export function Select<T extends string | number>({
         )}
       >
         {({ close }) => (
-          <div className="cal-select__panel">
+          <div
+            className="cal-select__panel"
+            onKeyDown={(event) => {
+              if (event.key === "ArrowDown") {
+                event.preventDefault();
+                moveActive(1);
+              } else if (event.key === "ArrowUp") {
+                event.preventDefault();
+                moveActive(-1);
+              } else if (event.key === "Enter") {
+                event.preventDefault();
+                const option = filtered[activeIndex];
+                if (option) {
+                  onChange(option.value);
+                  close();
+                }
+              }
+            }}
+          >
             {searchable ? (
               <input
                 ref={searchRef}
@@ -83,26 +116,10 @@ export function Select<T extends string | number>({
                   setSearch(event.target.value);
                   setActiveIndex(0);
                 }}
-                onKeyDown={(event) => {
-                  if (event.key === "ArrowDown") {
-                    event.preventDefault();
-                    setActiveIndex((index) => Math.min(index + 1, filtered.length - 1));
-                  } else if (event.key === "ArrowUp") {
-                    event.preventDefault();
-                    setActiveIndex((index) => Math.max(index - 1, 0));
-                  } else if (event.key === "Enter") {
-                    event.preventDefault();
-                    const option = filtered[activeIndex];
-                    if (option) {
-                      onChange(option.value);
-                      close();
-                    }
-                  }
-                }}
               />
             ) : null}
-            <div className="cal-select__list" role="listbox">
-              {filtered.length === 0 ? <p className="cal-select__empty">No matches</p> : null}
+            {filtered.length === 0 ? <p className="cal-select__empty">No matches</p> : null}
+            <div className="cal-select__list" role="listbox" ref={listRef}>
               {filtered.map((option, index) => (
                 <button
                   key={String(option.value)}

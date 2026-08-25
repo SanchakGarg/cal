@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Shell } from "./app/Shell.tsx";
 import { useAuth } from "./app/auth.tsx";
-import { matchPath, useRouter } from "./app/router.tsx";
+import { Link, matchPath, useRouter } from "./app/router.tsx";
 import { Skeleton } from "./ui/Layout.tsx";
 import { api } from "./lib/api.ts";
 import { AuthCallbackPage } from "./pages/AuthCallbackPage.tsx";
@@ -9,7 +9,12 @@ import { AvailabilityDetailPage } from "./pages/AvailabilityDetailPage.tsx";
 import { AvailabilityPage } from "./pages/AvailabilityPage.tsx";
 import { BookerPage } from "./pages/BookerPage.tsx";
 import { BookingDetailPage } from "./pages/BookingDetailPage.tsx";
+import { BookingCancelPage } from "./pages/BookingCancelPage.tsx";
 import { BookingsPage, type BookingStatus } from "./pages/BookingsPage.tsx";
+import { EventTypeCreatePage } from "./pages/EventTypeCreatePage.tsx";
+import { OutOfOfficeCreatePage } from "./pages/OutOfOfficeCreatePage.tsx";
+import { ScheduleCreatePage } from "./pages/ScheduleCreatePage.tsx";
+import { TeamCreatePage } from "./pages/TeamCreatePage.tsx";
 import { EventTypeDetailPage } from "./pages/EventTypeDetailPage.tsx";
 import { EventTypesPage } from "./pages/EventTypesPage.tsx";
 import { LoginPage } from "./pages/LoginPage.tsx";
@@ -27,7 +32,7 @@ const BOOKING_STATUSES: BookingStatus[] = ["upcoming", "unconfirmed", "recurring
 const PUBLIC_PREFIXES = ["/auth/", "/booking/", "/reschedule/", "/d/", "/team/"];
 
 export function App() {
-  const { path, navigate } = useRouter();
+  const { path, search, navigate } = useRouter();
   const { me, loading } = useAuth();
 
   const isAppRoute =
@@ -45,9 +50,7 @@ export function App() {
     // can navigate anywhere in the app afterwards.
   }, [loading, me, path, isAppRoute, navigate]);
 
-  if (path === "/" ) {
-    return <RootRedirect />;
-  }
+  if (path === "/") return <RootRedirect />;
 
   if (path === "/auth/login") return <LoginPage />;
   if (path === "/auth/callback") return <AuthCallbackPage />;
@@ -79,6 +82,14 @@ export function App() {
         </Shell>
       );
     }
+    // `/new` has to be matched before `/:id`, otherwise it is read as an id.
+    if (path === "/event-types/new") {
+      return (
+        <Shell>
+          <EventTypeCreatePage />
+        </Shell>
+      );
+    }
     const eventTypeDetail = matchPath("/event-types/:id", path);
     if (eventTypeDetail) {
       return (
@@ -101,11 +112,26 @@ export function App() {
         </Shell>
       );
     }
+    if (path === "/availability/new") {
+      return (
+        <Shell>
+          <ScheduleCreatePage />
+        </Shell>
+      );
+    }
     const availabilityDetail = matchPath("/availability/:id", path);
     if (availabilityDetail) {
       return (
         <Shell>
           <AvailabilityDetailPage scheduleId={Number(availabilityDetail.params.id)} />
+        </Shell>
+      );
+    }
+    const bookingCancel = matchPath("/bookings/:uid/cancel", path);
+    if (bookingCancel) {
+      return (
+        <Shell>
+          <BookingCancelPage uid={bookingCancel.params.uid} />
         </Shell>
       );
     }
@@ -134,7 +160,24 @@ export function App() {
         </Shell>
       );
     }
+    if (path === "/teams/new") {
+      return (
+        <Shell>
+          <TeamCreatePage
+            kind={search.get("type") === "organization" ? "organization" : "team"}
+          />
+        </Shell>
+      );
+    }
     // Team event types are edited inside the team, not in the personal list.
+    const teamEventTypeNew = matchPath("/teams/:id/event-types/new", path);
+    if (teamEventTypeNew) {
+      return (
+        <Shell>
+          <EventTypeCreatePage teamId={Number(teamEventTypeNew.params.id)} />
+        </Shell>
+      );
+    }
     const teamEventType = matchPath("/teams/:id/event-types/:eventTypeId", path);
     if (teamEventType) {
       return (
@@ -176,6 +219,13 @@ export function App() {
         </Shell>
       );
     }
+    if (path === "/settings/out-of-office/new") {
+      return (
+        <Shell>
+          <OutOfOfficeCreatePage />
+        </Shell>
+      );
+    }
     const settings = matchPath("/settings/:tab", path);
     if (settings) {
       const tab = settings.params.tab as "profile" | "general" | "out-of-office";
@@ -204,11 +254,19 @@ export function App() {
     return <ProfilePage username={userProfile.params.username} />;
   }
 
+  return <NotFound path={path} />;
+}
+
+function NotFound({ path }: { path: string }) {
+  const { me } = useAuth();
   return (
-    <div style={{ minHeight: "100vh", display: "grid", placeItems: "center" }}>
-      <div style={{ textAlign: "center" }}>
+    <div style={{ minHeight: "100vh", display: "grid", placeItems: "center", padding: 24 }}>
+      <div style={{ textAlign: "center", display: "grid", gap: 12, justifyItems: "center" }}>
         <h1>Page not found</h1>
         <p className="cal-muted">{path}</p>
+        <Link to={me ? "/event-types" : "/auth/login"} className="cal-btn cal-btn--secondary cal-btn--md">
+          <span className="cal-btn__label">{me ? "Back to event types" : "Go to sign in"}</span>
+        </Link>
       </div>
     </div>
   );

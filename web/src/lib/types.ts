@@ -64,7 +64,13 @@ export interface BookingField {
   required: boolean;
   placeholder: string | null;
   hidden: boolean;
+  /** Answer choices for select/multiselect/radio/checkbox questions. */
   options?: string[];
+  /** Bounds for the multi-answer types (multiselect, checkbox). */
+  minSelections?: number;
+  maxSelections?: number;
+  /** Highest value a `rating` question accepts. */
+  maxRating?: number;
 }
 
 export interface Disableable {

@@ -1,8 +1,6 @@
 import { useEffect, useState } from "react";
 import { Button, IconButton } from "../ui/Button.tsx";
-import { ConfirmDialog, Dialog } from "../ui/Dialog.tsx";
-import { TextArea } from "../ui/Field.tsx";
-import { Avatar, Badge, EmptyState, List, ListRow, PageHeader, Skeleton, Tabs } from "../ui/Layout.tsx";
+import { Avatar, Badge, EmptyState, List, ListRow, PageHeader, SkeletonList, Tabs } from "../ui/Layout.tsx";
 import { DropdownMenu, Popover } from "../ui/Popover.tsx";
 import { useToast } from "../ui/Toast.tsx";
 import { api, errorMessage } from "../lib/api.ts";
@@ -13,6 +11,13 @@ import { useRouter } from "../app/router.tsx";
 import "./BookingsPage.css";
 
 export type BookingStatus = "upcoming" | "unconfirmed" | "recurring" | "past" | "cancelled";
+
+const ACTION_LABELS: Record<string, string> = {
+  confirm: "Booking confirmed",
+  decline: "Booking rejected",
+  "mark-absent": "Host marked absent",
+  "request-reschedule": "Reschedule requested",
+};
 
 const TABS: Array<{ value: BookingStatus; label: string }> = [
   { value: "upcoming", label: "Upcoming" },
@@ -29,9 +34,7 @@ export function BookingsPage({ status }: { status: BookingStatus }) {
   const toast = useToast();
 
   const [bookings, setBookings] = useState<Booking[] | null>(null);
-  const [cancelTarget, setCancelTarget] = useState<Booking | null>(null);
-  const [cancelReason, setCancelReason] = useState("");
-  const [busy, setBusy] = useState(false);
+  const [busyUid, setBusyUid] = useState<string | null>(null);
 
   const load = async (): Promise<void> => {
     setBookings(null);
@@ -48,31 +51,22 @@ export function BookingsPage({ status }: { status: BookingStatus }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status]);
 
-  const act = async (booking: Booking, action: "confirm" | "decline" | "mark-absent" | "request-reschedule"): Promise<void> => {
+  const act = async (
+    booking: Booking,
+    action: "confirm" | "decline" | "mark-absent" | "request-reschedule"
+  ): Promise<void> => {
+    setBusyUid(booking.uid);
     try {
-      await api.post(`/v2/bookings/${booking.uid}/${action}`, action === "mark-absent" ? { host: true } : {});
-      toast.success("Booking updated");
-      await load();
-    } catch (error) {
-      toast.error(errorMessage(error));
-    }
-  };
-
-  const cancel = async (): Promise<void> => {
-    if (!cancelTarget) return;
-    setBusy(true);
-    try {
-      await api.post(`/v2/bookings/${cancelTarget.uid}/cancel`, {
-        cancellationReason: cancelReason || undefined,
-      });
-      toast.success("Booking cancelled");
-      setCancelTarget(null);
-      setCancelReason("");
+      await api.post(
+        `/v2/bookings/${booking.uid}/${action}`,
+        action === "mark-absent" ? { host: true } : {}
+      );
+      toast.success(ACTION_LABELS[action]);
       await load();
     } catch (error) {
       toast.error(errorMessage(error));
     } finally {
-      setBusy(false);
+      setBusyUid(null);
     }
   };
 
@@ -85,13 +79,7 @@ export function BookingsPage({ status }: { status: BookingStatus }) {
 
       <div className="cal-bookings">
         {bookings === null ? (
-          <List>
-            {[0, 1, 2].map((index) => (
-              <ListRow key={index}>
-                <Skeleton height={52} />
-              </ListRow>
-            ))}
-          </List>
+          <SkeletonList rows={3} height={52} />
         ) : bookings.length === 0 ? (
           <EmptyState
             icon="calendar"
@@ -138,10 +126,19 @@ export function BookingsPage({ status }: { status: BookingStatus }) {
                   <div className="cal-row cal-booking__actions">
                     {booking.status === "pending" ? (
                       <>
-                        <Button size="sm" variant="secondary" onClick={() => void act(booking, "decline")}>
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          loading={busyUid === booking.uid}
+                          onClick={() => void act(booking, "decline")}
+                        >
                           Reject
                         </Button>
-                        <Button size="sm" onClick={() => void act(booking, "confirm")}>
+                        <Button
+                          size="sm"
+                          loading={busyUid === booking.uid}
+                          onClick={() => void act(booking, "confirm")}
+                        >
                           Confirm
                         </Button>
                       </>
@@ -186,7 +183,7 @@ export function BookingsPage({ status }: { status: BookingStatus }) {
                               label: "Cancel booking",
                               destructive: true,
                               disabled: booking.status === "cancelled",
-                              onSelect: () => setCancelTarget(booking),
+                              onSelect: () => navigate(`/bookings/${booking.uid}/cancel`),
                             },
                           ]}
                         />
@@ -200,30 +197,6 @@ export function BookingsPage({ status }: { status: BookingStatus }) {
         )}
       </div>
 
-      <Dialog
-        open={cancelTarget !== null}
-        onClose={() => setCancelTarget(null)}
-        title="Cancel this booking?"
-        description="The attendee is notified that the meeting is off."
-        footer={
-          <>
-            <Button variant="minimal" onClick={() => setCancelTarget(null)}>
-              Keep it
-            </Button>
-            <Button variant="destructive" loading={busy} onClick={() => void cancel()}>
-              Cancel booking
-            </Button>
-          </>
-        }
-      >
-        <TextArea
-          label="Reason (optional)"
-          value={cancelReason}
-          onChange={(event) => setCancelReason(event.target.value)}
-        />
-      </Dialog>
-
-      <ConfirmDialog open={false} onClose={() => undefined} onConfirm={() => undefined} title="" />
     </>
   );
 }

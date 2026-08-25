@@ -1,14 +1,13 @@
 import { useEffect, useState } from "react";
 import { Button, IconButton } from "../ui/Button.tsx";
-import { ConfirmDialog, Dialog } from "../ui/Dialog.tsx";
-import { TextField } from "../ui/Field.tsx";
-import { Badge, EmptyState, List, ListRow, PageHeader, Skeleton } from "../ui/Layout.tsx";
+import { ConfirmDialog } from "../ui/Dialog.tsx";
+import { Badge, EmptyState, List, ListRow, PageHeader, SkeletonList } from "../ui/Layout.tsx";
 import { DropdownMenu, Popover } from "../ui/Popover.tsx";
 import { Icon } from "../ui/Icon.tsx";
 import { useToast } from "../ui/Toast.tsx";
 import { api, errorMessage } from "../lib/api.ts";
 import type { Schedule } from "../lib/types.ts";
-import { availabilitySummary, browserTimeZone } from "../lib/time.ts";
+import { availabilitySummary } from "../lib/time.ts";
 import { useAuth, useTimeFormat } from "../app/auth.tsx";
 import { useRouter } from "../app/router.tsx";
 
@@ -18,9 +17,6 @@ export function AvailabilityPage() {
   const timeFormat = useTimeFormat();
   const toast = useToast();
   const [schedules, setSchedules] = useState<Schedule[] | null>(null);
-  const [newOpen, setNewOpen] = useState(false);
-  const [name, setName] = useState("Working Hours");
-  const [saving, setSaving] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Schedule | null>(null);
 
   const load = async (): Promise<void> => {
@@ -36,36 +32,18 @@ export function AvailabilityPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const create = async (): Promise<void> => {
-    setSaving(true);
-    try {
-      const created = await api.post<Schedule>("/v2/schedules", {
-        name: name.trim() || "Working Hours",
-        timeZone: browserTimeZone(),
-        isDefault: (schedules?.length ?? 0) === 0,
-        availability: [{ days: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"], startTime: "09:00", endTime: "17:00" }],
-      });
-      setNewOpen(false);
-      setName("Working Hours");
-      await refresh();
-      navigate(`/availability/${created.id}`);
-    } catch (error) {
-      toast.error(errorMessage(error));
-    } finally {
-      setSaving(false);
-    }
-  };
-
   const duplicate = async (schedule: Schedule): Promise<void> => {
     try {
-      await api.post<Schedule>("/v2/schedules", {
+      const copy = await api.post<Schedule>("/v2/schedules", {
         name: `${schedule.name} (copy)`,
         timeZone: schedule.timeZone,
         isDefault: false,
         availability: schedule.availability,
         overrides: schedule.overrides,
       });
-      toast.success("Schedule duplicated");
+      toast.success("Schedule duplicated", {
+        action: { label: "Open", onClick: () => navigate(`/availability/${copy.id}`) },
+      });
       await load();
     } catch (error) {
       toast.error(errorMessage(error));
@@ -91,27 +69,21 @@ export function AvailabilityPage() {
         title="Availability"
         subtitle="Configure times when you are available for bookings."
         actions={
-          <Button startIcon="plus" onClick={() => setNewOpen(true)}>
+          <Button startIcon="plus" onClick={() => navigate("/availability/new")}>
             New
           </Button>
         }
       />
 
       {schedules === null ? (
-        <List>
-          {[0, 1, 2].map((index) => (
-            <ListRow key={index}>
-              <Skeleton height={38} />
-            </ListRow>
-          ))}
-        </List>
+        <SkeletonList rows={3} />
       ) : schedules.length === 0 ? (
         <EmptyState
           icon="clock"
           title="No schedules yet"
           description="Create a schedule to tell people when you can meet."
           action={
-            <Button startIcon="plus" onClick={() => setNewOpen(true)}>
+            <Button startIcon="plus" onClick={() => navigate("/availability/new")}>
               New schedule
             </Button>
           }
@@ -168,29 +140,6 @@ export function AvailabilityPage() {
           ))}
         </List>
       )}
-
-      <Dialog
-        open={newOpen}
-        onClose={() => setNewOpen(false)}
-        title="Add a new schedule"
-        footer={
-          <>
-            <Button variant="minimal" onClick={() => setNewOpen(false)}>
-              Cancel
-            </Button>
-            <Button loading={saving} onClick={() => void create()}>
-              Continue
-            </Button>
-          </>
-        }
-      >
-        <TextField
-          label="Name"
-          value={name}
-          onChange={(event) => setName(event.target.value)}
-          placeholder="Working Hours"
-        />
-      </Dialog>
 
       <ConfirmDialog
         open={deleteTarget !== null}

@@ -1,0 +1,22 @@
+.cal-tooltip {
+  position: fixed;
+  z-index: 130;
+  max-width: 260px;
+  padding: 6px 9px;
+  border-radius: var(--cal-radius-sm);
+  background: var(--cal-bg-inverted);
+  color: var(--cal-text-inverted);
+  font-size: 12px;
+  line-height: 1.4;
+  box-shadow: var(--cal-shadow-drop);
+  pointer-events: none;
+  animation: cal-slide-down var(--cal-duration-fast) var(--cal-ease-out) both;
+}
+
+.cal-tooltip--top {
+  transform: translate(-50%, -100%);
+}
+
+.cal-tooltip--bottom {
+  transform: translate(-50%, 0);
+}

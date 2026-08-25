@@ -1,4 +1,5 @@
 @import "./tokens.css";
+@import "./animations.css";
 
 *,
 *::before,
@@ -112,4 +113,34 @@ textarea {
 
 .cal-scroll {
   overflow-x: auto;
+}
+
+/* Sticky "you have unsaved changes" bar, shared by the editors. */
+.cal-unsaved-bar {
+  position: sticky;
+  bottom: 16px;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 16px 0 0;
+  padding: 10px 14px;
+  border: 1px solid var(--cal-border);
+  border-radius: var(--cal-radius-lg);
+  background: var(--cal-bg);
+  box-shadow: var(--cal-shadow-drop);
+  font-size: 13px;
+  color: var(--cal-text-emphasis);
+  animation: cal-slide-up var(--cal-duration) var(--cal-ease-out) both;
+}
+
+.cal-link-button {
+  border: 0;
+  padding: 0;
+  background: none;
+  color: var(--cal-text-emphasis);
+  text-decoration: underline;
+  cursor: pointer;
+  font-size: inherit;
 }

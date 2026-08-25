@@ -4,6 +4,7 @@ import { query, queryOne } from "../../db/pool.ts";
 import { badRequest, notFound } from "../../http/errors.ts";
 import { handler, ok } from "../../http/respond.ts";
 import { asObject, array, oneOf, optBool, optInt, optStr, str } from "../../http/validate.ts";
+import { assertSafeWebhookUrl } from "../../lib/webhooks.ts";
 import { currentUser, requireAuth } from "../../auth/middleware.ts";
 import { type WebhookRow, serializeWebhook } from "../serialize.ts";
 
@@ -42,10 +43,14 @@ export function parseWebhookInput(raw: unknown, partial = false): Partial<Webhoo
     }
   }
   if (!partial && !triggers) throw badRequest("triggers is required");
+  const subscriberUrl = partial
+    ? optStr(body, "subscriberUrl", { max: 500 })
+    : str(body, "subscriberUrl", { max: 500 });
+  // The server fetches this URL, so it must not be able to reach private hosts.
+  if (subscriberUrl !== undefined) assertSafeWebhookUrl(subscriberUrl);
+
   return {
-    subscriberUrl: partial
-      ? optStr(body, "subscriberUrl", { max: 500 })
-      : str(body, "subscriberUrl", { max: 500 }),
+    subscriberUrl,
     triggers: triggers?.map(String),
     active: optBool(body, "active") ?? (partial ? undefined : true),
     secret: optStr(body, "secret", { max: 200 }),

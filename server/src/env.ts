@@ -54,13 +54,25 @@ function num(key: string, fallback: number): number {
   return parsed;
 }
 
+function requiredInProduction(key: string, devFallback: string): string {
+  const value = process.env[key];
+  if (value === undefined || value === "") {
+    if ((process.env.NODE_ENV ?? "development") === "production") {
+      throw new Error(`${key} must be set explicitly when NODE_ENV=production`);
+    }
+    return devFallback;
+  }
+  return value;
+}
+
 export const env = {
   databaseUrl: str("DATABASE_URL", "postgres://cal:cal@localhost:5432/cal"),
   apiPort: num("API_PORT", 3001),
   apiOrigin: str("API_ORIGIN", "http://localhost:3001"),
   webOrigin: str("WEB_ORIGIN", "http://localhost:5173"),
 
-  jwtSecret: str("JWT_SECRET", "dev-secret-change-me-dev-secret-change-me"),
+  // The dev fallback is a known value, so production must supply its own.
+  jwtSecret: requiredInProduction("JWT_SECRET", "dev-secret-change-me-dev-secret-change-me"),
   accessTokenTtl: str("ACCESS_TOKEN_TTL", "15m"),
   refreshTokenTtl: str("REFRESH_TOKEN_TTL", "30d"),
 
@@ -78,6 +90,17 @@ export const env = {
     enabled: bool("AUTH_GUEST_ENABLED", true),
     autoCreate: bool("GUEST_AUTO_CREATE", true),
   },
+
+  // There is no mail transport in this build. Turning this on returns the
+  // verification code in the API response so the flow can be exercised locally —
+  // it defeats email verification, so it must stay off anywhere real.
+  exposeVerificationCodes: bool("EXPOSE_VERIFICATION_CODES", false),
+
+  // Webhook subscriber URLs are user-supplied and fetched by the server, so
+  // private address space is refused unless a deployment opts in.
+  allowPrivateWebhookTargets: bool("ALLOW_PRIVATE_WEBHOOK_TARGETS", false),
+
+  production: (process.env.NODE_ENV ?? "development") === "production",
 
   // When true the API also serves the built web app, so one process/container is
   // enough to host everything.

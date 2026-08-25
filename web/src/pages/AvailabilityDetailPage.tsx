@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Button, IconButton } from "../ui/Button.tsx";
 import { TextField } from "../ui/Field.tsx";
 import { PageHeader, Skeleton } from "../ui/Layout.tsx";
@@ -65,6 +65,17 @@ export function AvailabilityDetailPage({ scheduleId }: { scheduleId: number }) {
     }
   };
 
+  // Compare against the loaded schedule so the Save button reflects real changes.
+  const dirty = useMemo(() => {
+    if (!schedule || !week) return false;
+    return (
+      name !== schedule.name ||
+      timeZone !== schedule.timeZone ||
+      isDefault !== schedule.isDefault ||
+      JSON.stringify(weekToBlocks(week)) !== JSON.stringify(schedule.availability)
+    );
+  }, [schedule, week, name, timeZone, isDefault]);
+
   const save = async (): Promise<void> => {
     if (!week) return;
     setSaving(true);
@@ -77,13 +88,20 @@ export function AvailabilityDetailPage({ scheduleId }: { scheduleId: number }) {
         overrides,
       });
       setSchedule(updated);
-      toast.success("Availability saved");
       await refresh();
+      toast.success("Availability saved", {
+        action: { label: "Back to list", onClick: () => navigate("/availability") },
+      });
     } catch (error) {
       toast.error(errorMessage(error));
     } finally {
       setSaving(false);
     }
+  };
+
+  const leave = (): void => {
+    if (dirty && !window.confirm("You have unsaved changes. Leave without saving?")) return;
+    navigate("/availability");
   };
 
   if (!schedule || !week) {
@@ -103,7 +121,7 @@ export function AvailabilityDetailPage({ scheduleId }: { scheduleId: number }) {
       <PageHeader
         title={name || schedule.name}
         subtitle="Set your weekly hours and override individual dates."
-        onBack={() => navigate("/availability")}
+        onBack={leave}
         actions={
           <>
             <div className="cal-row cal-availability__default">
@@ -115,12 +133,34 @@ export function AvailabilityDetailPage({ scheduleId }: { scheduleId: number }) {
               variant="secondary"
               onClick={() => navigate("/availability/troubleshoot")}
             />
-            <Button loading={saving} onClick={() => void save()}>
+            <Button loading={saving} disabled={!dirty} onClick={() => void save()}>
               Save
             </Button>
           </>
         }
       />
+
+      {dirty ? (
+        <div className="cal-unsaved-bar" role="status">
+          <span>Unsaved changes</span>
+          <div className="cal-row">
+            <Button
+              variant="minimal"
+              onClick={() => {
+                setName(schedule.name);
+                setTimeZone(schedule.timeZone);
+                setIsDefault(schedule.isDefault);
+                setWeek(blocksToWeek(schedule.availability));
+              }}
+            >
+              Discard
+            </Button>
+            <Button loading={saving} onClick={() => void save()}>
+              Save
+            </Button>
+          </div>
+        </div>
+      ) : null}
 
       <div className="cal-availability">
         <section className="cal-card cal-availability__main">

@@ -66,6 +66,27 @@ meRouter.patch(
       throw badRequest("timeFormat must be 12 or 24");
     }
 
+    const email = optStr(body, "email", { max: 200 });
+    if (email !== undefined) {
+      if (!email.includes("@")) throw badRequest("email must be an email address");
+      const taken = await queryOne("SELECT 1 FROM users WHERE lower(email) = lower($1) AND id <> $2", [
+        email,
+        user.id,
+      ]);
+      if (taken) throw badRequest("That email is already in use");
+    }
+
+    // A schedule id from the request body must be one the caller actually owns,
+    // otherwise it points their availability at someone else's calendar.
+    const defaultScheduleId = optInt(body, "defaultScheduleId");
+    if (defaultScheduleId !== undefined) {
+      const owned = await queryOne("SELECT 1 FROM schedules WHERE id = $1 AND user_id = $2", [
+        defaultScheduleId,
+        user.id,
+      ]);
+      if (!owned) throw badRequest("defaultScheduleId must be one of your own schedules");
+    }
+
     await query(
       `UPDATE users SET
          username = COALESCE($2, username),
@@ -85,14 +106,14 @@ meRouter.patch(
         user.id,
         body.username ?? null,
         optStr(body, "name", { max: 120 }) ?? null,
-        optStr(body, "email", { max: 200 }) ?? null,
+        email ?? null,
         optStr(body, "bio", { max: 2000 }) ?? null,
         optStr(body, "avatarUrl", { max: 500 }) ?? null,
         optTimeZone(body, "timeZone") ?? null,
         oneOf(body, "weekStart", ["Sunday", "Monday", "Saturday"] as const) ?? null,
         timeFormat ?? null,
         optStr(body, "locale", { max: 10 }) ?? null,
-        optInt(body, "defaultScheduleId") ?? null,
+        defaultScheduleId ?? null,
         body.completedOnboarding === undefined ? null : Boolean(body.completedOnboarding),
       ]
     );
@@ -152,6 +173,21 @@ meRouter.get(
   })
 );
 
+/** Forwarding out-of-office to someone means naming them, so it is limited to
+ *  people the caller actually shares a team with. */
+async function assertForwardTarget(userId: number, toUserId: number | undefined): Promise<void> {
+  if (toUserId === undefined) return;
+  if (toUserId === userId) throw badRequest("toUserId cannot be yourself");
+  const shared = await queryOne(
+    `SELECT 1 FROM memberships mine
+     JOIN memberships theirs ON theirs.team_id = mine.team_id
+     WHERE mine.user_id = $1 AND mine.accepted = TRUE
+       AND theirs.user_id = $2 AND theirs.accepted = TRUE`,
+    [userId, toUserId]
+  );
+  if (!shared) throw badRequest("toUserId must be someone on one of your teams");
+}
+
 meRouter.post(
   "/ooo",
   handler(async (req, res) => {
@@ -160,6 +196,7 @@ meRouter.post(
     const start = dateISO(body.start, "start");
     const end = dateISO(body.end, "end");
     if (end < start) throw badRequest("end must be on or after start");
+    await assertForwardTarget(user.id, optInt(body, "toUserId"));
 
     const row = await queryOne<OooRow>(
       `INSERT INTO out_of_office (uuid, user_id, start_date, end_date, reason, notes, to_user_id)
@@ -185,6 +222,7 @@ meRouter.patch(
     const user = currentUser(req);
     const oooId = paramInt(req.params.oooId, "oooId");
     const body = asObject(req.body);
+    await assertForwardTarget(user.id, optInt(body, "toUserId"));
     const row = await queryOne<OooRow>(
       `UPDATE out_of_office SET
          start_date = COALESCE($3, start_date),

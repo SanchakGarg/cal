@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Button, IconButton } from "../ui/Button.tsx";
 import { CopyButton } from "../ui/CopyButton.tsx";
 import { ConfirmDialog, Dialog } from "../ui/Dialog.tsx";
-import { NumberField, TextArea, TextField } from "../ui/Field.tsx";
+import { TextField } from "../ui/Field.tsx";
 import {
   Avatar,
   AvatarGroup,
@@ -19,11 +19,11 @@ import {
 import { locationLabel } from "../ui/LocationPicker.tsx";
 import { Icon, type IconName } from "../ui/Icon.tsx";
 import { DropdownMenu, Popover } from "../ui/Popover.tsx";
-import { RadioGroup } from "../ui/Field.tsx";
 import { Select } from "../ui/Select.tsx";
 import { Switch } from "../ui/Switch.tsx";
 import { useToast } from "../ui/Toast.tsx";
 import { api, errorMessage } from "../lib/api.ts";
+import { openExternal } from "../lib/url.ts";
 import type { Booking, EventType, Membership, Schedule, Team } from "../lib/types.ts";
 import { availabilitySummary, durationLabel, formatDateTime, formatTime } from "../lib/time.ts";
 import { useAuth, useTimeFormat } from "../app/auth.tsx";
@@ -40,9 +40,6 @@ const TABS: Array<{ value: TeamTab; label: string }> = [
 ];
 
 const ROLES = ["OWNER", "ADMIN", "MEMBER"] as const;
-const slugify = (value: string): string =>
-  value.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
-
 export function TeamPage({ teamId, tab }: { teamId: number; tab: TeamTab }) {
   const { navigate } = useRouter();
   const toast = useToast();
@@ -87,7 +84,7 @@ export function TeamPage({ teamId, tab }: { teamId: number; tab: TeamTab }) {
                 icon="external"
                 label="Open team page"
                 variant="secondary"
-                onClick={() => window.open(`/team/${team.slug}`, "_blank")}
+                onClick={() => openExternal(`/team/${team.slug}`)}
               />
             </>
           ) : undefined
@@ -107,7 +104,7 @@ export function TeamPage({ teamId, tab }: { teamId: number; tab: TeamTab }) {
           />
         ) : null}
         {tab === "event-types" ? (
-          <TeamEventTypes teamId={teamId} members={members ?? []} eventTypes={eventTypes} onReload={load} />
+          <TeamEventTypes teamId={teamId} eventTypes={eventTypes} onReload={load} />
         ) : null}
         {tab === "members" ? (
           <TeamMembers teamId={teamId} members={members} onReload={load} />
@@ -307,55 +304,16 @@ function StatCard({ label, value, icon }: { label: string; value: number; icon: 
 
 function TeamEventTypes({
   teamId,
-  members,
   eventTypes,
   onReload,
 }: {
   teamId: number;
-  members: Membership[];
   eventTypes: EventType[] | null;
   onReload: () => Promise<void>;
 }) {
   const { navigate } = useRouter();
   const toast = useToast();
-  const [createOpen, setCreateOpen] = useState(false);
-  const [title, setTitle] = useState("");
-  const [slug, setSlug] = useState("");
-  const [description, setDescription] = useState("");
-  const [duration, setDuration] = useState<number | "">(30);
-  const [schedulingType, setSchedulingType] = useState<"collective" | "roundRobin" | "managed">("collective");
-  const [hostIds, setHostIds] = useState<number[]>([]);
-  const [saving, setSaving] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<EventType | null>(null);
-
-  const accepted = members.filter((membership) => membership.accepted);
-
-  const create = async (): Promise<void> => {
-    setSaving(true);
-    try {
-      const created = await api.post<EventType>(`/v2/teams/${teamId}/event-types`, {
-        title,
-        slug: slug || slugify(title),
-        description,
-        lengthInMinutes: duration === "" ? 30 : duration,
-        schedulingType,
-        hosts: (hostIds.length ? hostIds : accepted.map((membership) => membership.userId)).map((userId) => ({
-          userId,
-          mandatory: schedulingType === "collective",
-        })),
-      });
-      setCreateOpen(false);
-      setTitle("");
-      setSlug("");
-      setDescription("");
-      setHostIds([]);
-      navigate(`/teams/${teamId}/event-types/${created.id}`);
-    } catch (error) {
-      toast.error(errorMessage(error));
-    } finally {
-      setSaving(false);
-    }
-  };
 
   const toggleHidden = async (eventType: EventType): Promise<void> => {
     try {
@@ -387,7 +345,7 @@ function TeamEventTypes({
           they take elsewhere blocks them here too.
         </p>
         <div className="cal-spacer" />
-        <Button startIcon="plus" onClick={() => setCreateOpen(true)}>
+        <Button startIcon="plus" onClick={() => navigate(`/teams/${teamId}/event-types/new`)}>
           New team event
         </Button>
       </div>
@@ -398,7 +356,7 @@ function TeamEventTypes({
           title="No team event types yet"
           description="Create one and pick who hosts it — collectively or round robin."
           action={
-            <Button startIcon="plus" onClick={() => setCreateOpen(true)}>
+            <Button startIcon="plus" onClick={() => navigate(`/teams/${teamId}/event-types/new`)}>
               New team event
             </Button>
           }
@@ -473,64 +431,6 @@ function TeamEventTypes({
           ))}
         </List>
       )}
-
-      <Dialog
-        open={createOpen}
-        onClose={() => setCreateOpen(false)}
-        title="New team event"
-        description="Pick how hosts are chosen; slots follow their availability."
-        footer={
-          <>
-            <Button variant="minimal" onClick={() => setCreateOpen(false)}>
-              Cancel
-            </Button>
-            <Button loading={saving} disabled={!title.trim()} onClick={() => void create()}>
-              Create
-            </Button>
-          </>
-        }
-      >
-        <TextField
-          label="Title"
-          placeholder="Product demo"
-          value={title}
-          onChange={(event) => {
-            setTitle(event.target.value);
-            setSlug(slugify(event.target.value));
-          }}
-        />
-        <TextField label="URL" prefix="/team/…/" value={slug} onChange={(event) => setSlug(slugify(event.target.value))} />
-        <TextArea label="Description" value={description} onChange={(event) => setDescription(event.target.value)} />
-        <NumberField label="Duration" suffix="minutes" min={1} value={duration} onValueChange={setDuration} />
-        <RadioGroup
-          label="Scheduling"
-          value={schedulingType}
-          onChange={(next) => setSchedulingType(next)}
-          options={[
-            { value: "collective", label: "Collective", description: "All hosts must be free." },
-            { value: "roundRobin", label: "Round robin", description: "One available host per booking." },
-            { value: "managed", label: "Managed", description: "Each member gets their own copy." },
-          ]}
-        />
-        <Select
-          label="Hosts"
-          placeholder="All accepted members"
-          value={null}
-          options={accepted.map((membership) => ({
-            value: membership.userId,
-            label: membership.user?.name || membership.user?.email || `User ${membership.userId}`,
-          }))}
-          onChange={(userId) => setHostIds((current) => (current.includes(userId) ? current : [...current, userId]))}
-        />
-        {hostIds.length > 0 ? (
-          <p className="cal-hint">
-            {hostIds.length} host(s) selected.{" "}
-            <button type="button" className="cal-link-button" onClick={() => setHostIds([])}>
-              clear
-            </button>
-          </p>
-        ) : null}
-      </Dialog>
 
       <ConfirmDialog
         open={deleteTarget !== null}

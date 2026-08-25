@@ -1,4 +1,6 @@
 .cal-btn {
+  position: relative;
+  overflow: hidden;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -8,12 +10,33 @@
   font-weight: 500;
   cursor: pointer;
   white-space: nowrap;
-  transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
+  transform: translateZ(0);
+  transition: background var(--cal-duration-fast) ease, border-color var(--cal-duration-fast) ease,
+    color var(--cal-duration-fast) ease, transform var(--cal-duration-fast) var(--cal-ease),
+    box-shadow var(--cal-duration-fast) ease, opacity var(--cal-duration-fast) ease;
+}
+
+.cal-btn:active:not(:disabled) {
+  transform: scale(0.97);
 }
 
 .cal-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.cal-btn--block {
+  width: 100%;
+}
+
+.cal-btn__ripple {
+  position: absolute;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.22;
+  transform: scale(0);
+  pointer-events: none;
+  animation: cal-ripple 500ms var(--cal-ease-out) forwards;
 }
 
 .cal-btn--sm {
@@ -92,8 +115,3 @@
   animation: cal-spin 700ms linear infinite;
 }
 
-@keyframes cal-spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
