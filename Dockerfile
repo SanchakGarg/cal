@@ -21,5 +21,8 @@ COPY docs ./docs
 COPY server/src ./server/src
 COPY server/tsconfig.json ./server/tsconfig.json
 COPY --from=build /app/web/dist ./web/dist
+COPY docker-entrypoint.sh ./docker-entrypoint.sh
+RUN chmod +x ./docker-entrypoint.sh
 EXPOSE 3001
-CMD ["node", "--experimental-strip-types", "server/src/index.ts"]
+# The entrypoint migrates before serving, so `docker compose up -d` is enough.
+CMD ["./docker-entrypoint.sh"]

@@ -17,10 +17,10 @@ services:
       timeout: 5s
       retries: 10
 
-  # Full self-hosted app (API + built web on one port). Start with:
-  #   docker compose --profile app up -d --build
+  # Full self-hosted app: API plus the built web bundle on one port.
+  # `docker compose up -d` starts this and postgres together; the container
+  # applies migrations before it serves.
   app:
-    profiles: ["app"]
     build: .
     container_name: cal-app
     restart: unless-stopped
@@ -32,6 +32,9 @@ services:
       # Pinned here because `environment` outranks `env_file`: a NODE_ENV meant
       # for local dev in .env must not put the container into development mode.
       NODE_ENV: "production"
+      # Set to "true" to load the demo users, team and bookings on start.
+      # The seed is idempotent, so it is safe to leave on for a demo instance.
+      SEED_ON_START: "${SEED_ON_START:-false}"
     ports:
       - "3001:3001"
     depends_on:

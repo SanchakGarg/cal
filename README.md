@@ -33,10 +33,11 @@ sed -i 's|^API_ORIGIN=.*|API_ORIGIN=http://localhost:3001|' .env
 sed -i 's|^WEB_ORIGIN=.*|WEB_ORIGIN=http://localhost:3001|' .env
 sed -i "s|^JWT_SECRET=.*|JWT_SECRET=$(openssl rand -base64 48)|" .env
 
-docker compose --profile app up -d --build
-docker compose exec app node --experimental-strip-types server/src/db/migrate.ts
-docker compose exec app node --experimental-strip-types server/src/db/seed.ts
+docker compose up -d --build
 ```
+
+The container applies migrations before it serves, so that one command is enough.
+Add demo users, a team and a booking with `SEED_ON_START=true docker compose up -d`.
 
 Open <http://localhost:3001> and press **Continue as guest** — no identity provider needed.
 
@@ -47,10 +48,10 @@ scripts assume `localhost` instead, so they are for the hot-reload setup below.
 Day to day:
 
 ```bash
-docker compose logs -f app                  # follow logs
-docker compose --profile app restart app     # pick up .env changes
-docker compose --profile app down            # stop (add -v to also wipe the database)
-docker compose --profile app up -d --build   # rebuild after pulling new code
+docker compose logs -f app     # follow logs
+docker compose restart app     # pick up .env changes
+docker compose down            # stop (add -v to also wipe the database)
+docker compose up -d --build   # rebuild after pulling new code
 ```
 
 ## Run it with hot reload (Postgres in Docker, app on the host)

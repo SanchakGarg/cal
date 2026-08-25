@@ -116,10 +116,13 @@ sed -i 's|^API_ORIGIN=.*|API_ORIGIN=http://localhost:3001|' .env
 sed -i 's|^WEB_ORIGIN=.*|WEB_ORIGIN=http://localhost:3001|' .env
 sed -i "s|^JWT_SECRET=.*|JWT_SECRET=$(openssl rand -base64 48)|" .env
 
-docker compose --profile app up -d --build
-docker compose exec app node --experimental-strip-types server/src/db/migrate.ts
-docker compose exec app node --experimental-strip-types server/src/db/seed.ts   # optional demo data
+docker compose up -d --build
 ```
+
+The container runs the migrations before starting the API, so nothing else is needed.
+For a throwaway demo instance, `SEED_ON_START=true docker compose up -d` also loads the
+demo users, team and bookings. The seed is idempotent, so repeated boots do not duplicate
+anything.
 
 On a real domain, replace `http://localhost:3001` in the two `sed` lines with
 `https://cal.example.com` and see the reverse-proxy snippet below.
@@ -133,10 +136,10 @@ with `ECONNREFUSED 127.0.0.1:5432`.
 Managing the stack:
 
 ```bash
-docker compose logs -f app                   # follow logs
-docker compose --profile app restart app      # pick up .env changes
-docker compose --profile app up -d --build    # rebuild after pulling new code
-docker compose --profile app down             # stop; add -v to wipe the database volume
+docker compose logs -f app     # follow logs
+docker compose restart app     # pick up .env changes
+docker compose up -d --build   # rebuild after pulling new code
+docker compose down            # stop; add -v to wipe the database volume
 ```
 
 ### WSL notes
