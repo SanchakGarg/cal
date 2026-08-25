@@ -29,6 +29,9 @@ services:
       DATABASE_URL: postgres://cal:cal@postgres:5432/cal
       SERVE_WEB: "true"
       API_PORT: "3001"
+      # Pinned here because `environment` outranks `env_file`: a NODE_ENV meant
+      # for local dev in .env must not put the container into development mode.
+      NODE_ENV: "production"
     ports:
       - "3001:3001"
     depends_on:
