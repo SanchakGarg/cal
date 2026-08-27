@@ -6,6 +6,7 @@ import { env } from "./env.ts";
 import { errorMiddleware, notFoundMiddleware, ok } from "./http/respond.ts";
 import { authRouter } from "./modules/auth/routes.ts";
 import { bookingsRouter } from "./modules/bookings/routes.ts";
+import { calendarsRouter } from "./modules/calendars/routes.ts";
 import { eventTypesRouter } from "./modules/event-types/routes.ts";
 import { meRouter } from "./modules/me/routes.ts";
 import { organizationsRouter } from "./modules/organizations/routes.ts";
@@ -68,6 +69,7 @@ export function createApp(): express.Express {
   app.use("/v2/event-types", eventTypesRouter);
   app.use("/v2/slots", slotsRouter);
   app.use("/v2/bookings", bookingsRouter);
+  app.use("/v2/calendars", calendarsRouter);
   app.use("/v2/teams", teamsRouter);
   app.use("/v2/organizations", organizationsRouter);
   app.use("/v2/webhooks", webhooksRouter);
@@ -104,9 +106,13 @@ if (isMain) {
     console.log(`API listening on http://localhost:${env.apiPort}`);
     // Report what the login page will actually offer: OIDC needs to be configured too.
     const oidcReady = env.oidc.enabled && Boolean(env.oidc.issuer && env.oidc.clientId);
+    const googleConfigured = Boolean(env.google.clientId && env.google.clientSecret);
+    const flag = (enabled: boolean): string =>
+      enabled ? (googleConfigured ? "on" : "enabled but not configured") : "off";
     console.log(
       `auth: oidc=${oidcReady ? "on" : env.oidc.enabled ? "enabled but not configured" : "off"} ` +
-        `guest=${env.guest.enabled ? "on" : "off"}`
+        `google=${flag(env.google.loginEnabled)} guest=${env.guest.enabled ? "on" : "off"}`
     );
+    console.log(`google calendar: ${flag(env.google.calendarEnabled)}`);
   });
 }

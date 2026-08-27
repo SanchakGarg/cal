@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Button } from "../ui/Button.tsx";
 import { TextField } from "../ui/Field.tsx";
 import { Icon } from "../ui/Icon.tsx";
+import { GoogleMark } from "../ui/GoogleMark.tsx";
 import { useToast } from "../ui/Toast.tsx";
 import { useAuth } from "../app/auth.tsx";
 import { useRouter } from "../app/router.tsx";
@@ -18,7 +19,9 @@ export function LoginPage() {
   const [loading, setLoading] = useState(false);
 
   const oidcEnabled = providers?.oidc.enabled ?? false;
+  const googleEnabled = providers?.google?.enabled ?? false;
   const guestEnabled = providers?.guest.enabled ?? false;
+  const ssoEnabled = oidcEnabled || googleEnabled;
 
   const onGuest = async (): Promise<void> => {
     setLoading(true);
@@ -45,14 +48,27 @@ export function LoginPage() {
           <p className="cal-muted">Sign in to manage your availability and bookings.</p>
         </div>
 
-        {oidcEnabled ? (
-          <a className="cal-auth__oidc" href={providers?.oidc.authorizeUrl}>
-            <Icon name="globe" size={16} />
-            Continue with {providers?.oidc.label ?? "SSO"}
-          </a>
+        {ssoEnabled ? (
+          <div className="cal-auth__providers">
+            {googleEnabled ? (
+              <a
+                className="cal-auth__google"
+                href={`${providers?.google.authorizeUrl}?returnTo=${encodeURIComponent(window.location.origin)}`}
+              >
+                <GoogleMark size={18} />
+                Continue with Google
+              </a>
+            ) : null}
+            {oidcEnabled ? (
+              <a className="cal-auth__oidc" href={providers?.oidc.authorizeUrl}>
+                <Icon name="globe" size={16} />
+                Continue with {providers?.oidc.label ?? "SSO"}
+              </a>
+            ) : null}
+          </div>
         ) : null}
 
-        {oidcEnabled && guestEnabled ? (
+        {ssoEnabled && guestEnabled ? (
           <div className="cal-auth__divider">
             <span>or</span>
           </div>
@@ -86,10 +102,11 @@ export function LoginPage() {
           </form>
         ) : null}
 
-        {!oidcEnabled && !guestEnabled ? (
+        {!ssoEnabled && !guestEnabled ? (
           <p className="cal-auth__disabled">
-            No login method is enabled. Set <code>AUTH_OIDC_ENABLED</code> or{" "}
-            <code>AUTH_GUEST_ENABLED</code> in the API environment.
+            No login method is enabled. Set <code>AUTH_GOOGLE_ENABLED</code>,{" "}
+            <code>AUTH_OIDC_ENABLED</code> or <code>AUTH_GUEST_ENABLED</code> in the API
+            environment.
           </p>
         ) : null}
       </div>

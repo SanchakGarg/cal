@@ -206,7 +206,30 @@ export interface OooEntry {
 
 export interface AuthProviders {
   oidc: { enabled: boolean; label: string; authorizeUrl: string };
+  google: { enabled: boolean; label: string; authorizeUrl: string };
   guest: { enabled: boolean };
+  /** Calendar linking is configured separately from Google sign-in. */
+  googleCalendar: { enabled: boolean };
+}
+
+export interface CalendarConnection {
+  id: number;
+  provider: string;
+  email: string;
+  calendarId: string;
+  calendarName: string | null;
+  syncBookings: boolean;
+  checkConflicts: boolean;
+  needsReconnect: boolean;
+  lastError: string | null;
+  connectedAt: string;
+}
+
+export interface GoogleCalendarOption {
+  id: string;
+  summary: string;
+  primary: boolean;
+  accessRole: string;
 }
 
 export interface SlotMap {

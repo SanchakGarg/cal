@@ -26,6 +26,12 @@ export async function findUserBySubject(subject: string): Promise<UserRow | null
   return queryOne<UserRow>(`SELECT ${SELECT_COLUMNS} FROM users WHERE oidc_subject = $1`, [subject]);
 }
 
+export async function findUserByGoogleSubject(subject: string): Promise<UserRow | null> {
+  return queryOne<UserRow>(`SELECT ${SELECT_COLUMNS} FROM users WHERE google_subject = $1`, [
+    subject,
+  ]);
+}
+
 /** Finds a free username, appending a counter when the base is taken. */
 export async function uniqueUsername(base: string): Promise<string> {
   const seed = slugify(base) || `user-${randomBytes(3).toString("hex")}`;
@@ -44,14 +50,16 @@ export interface CreateUserInput {
   timeZone?: string;
   isGuest?: boolean;
   oidcSubject?: string | null;
+  googleSubject?: string | null;
   avatarUrl?: string | null;
 }
 
 export async function createUser(input: CreateUserInput): Promise<UserRow> {
   const username = await uniqueUsername(input.username ?? input.name ?? input.email.split("@")[0]);
   const rows = await query<UserRow>(
-    `INSERT INTO users (uid, username, email, name, time_zone, is_guest, oidc_subject, avatar_url)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+    `INSERT INTO users (uid, username, email, name, time_zone, is_guest, oidc_subject,
+                        google_subject, avatar_url)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
      RETURNING ${SELECT_COLUMNS}`,
     [
       randomUUID(),
@@ -61,6 +69,7 @@ export async function createUser(input: CreateUserInput): Promise<UserRow> {
       input.timeZone ?? "Europe/London",
       input.isGuest ?? false,
       input.oidcSubject ?? null,
+      input.googleSubject ?? null,
       input.avatarUrl ?? null,
     ]
   );

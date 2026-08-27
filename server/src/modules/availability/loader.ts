@@ -2,6 +2,7 @@
 // out-of-office spans and busy time for a window.
 
 import { query } from "../../db/pool.ts";
+import { externalBusyByUser } from "../../lib/calendar-sync.ts";
 import type { EventTypeRow } from "../serialize.ts";
 import type {
   BookingLimits,
@@ -100,7 +101,7 @@ export async function loadHostSchedules(
     after: eventType.after_event_buffer ?? 0,
   };
 
-  const [availability, overrides, ooo, busy, reservations] = await Promise.all([
+  const [availability, overrides, ooo, busy, reservations, externalBusy] = await Promise.all([
     scheduleIds.length
       ? query<AvailabilityRow>(
           "SELECT schedule_id, day, start_time, end_time FROM availability WHERE schedule_id = ANY($1::int[])",
@@ -138,6 +139,9 @@ export async function loadHostSchedules(
          AND ($4::text IS NULL OR uid <> $4::text)`,
       [eventType.id, from, to, options.ignoreReservationUid ?? null]
     ),
+    // Events living only on a linked Google Calendar block slots too, so a host
+    // is never offered a time they are already busy for elsewhere.
+    externalBusyByUser(userIds, from, to),
   ]);
 
   const reservationBusy = reservations.map((row) => ({
@@ -174,6 +178,10 @@ export async function loadHostSchedules(
             start: row.start_time.getTime() - buffers.before * 60000,
             end: row.end_time.getTime() + buffers.after * 60000,
           })),
+        ...(externalBusy.get(host.userId) ?? []).map((span) => ({
+          start: span.start - buffers.before * 60000,
+          end: span.end + buffers.after * 60000,
+        })),
         ...reservationBusy,
       ],
     } satisfies HostSchedule;

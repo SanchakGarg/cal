@@ -8,8 +8,11 @@ generated availability, and organizations/teams host collective or round-robin e
   lives in `docs/calspec.json`.
 - **Web**: React + Vite. No UI kit, no CSS framework, no date library — every widget in
   `web/src/ui` is hand-built, styled with the design tokens in `web/src/styles/tokens.css`.
-- **Auth**: Zitadel OIDC (hosted elsewhere, configured by env) plus a guest login for local
-  testing. Each is switched on independently by env var.
+- **Auth**: Google sign-in, Zitadel OIDC (hosted elsewhere, configured by env) and a guest
+  login for local testing. Each is switched on independently by env var.
+- **Google Calendar**: optional two-way link — confirmed bookings are written to the host's
+  calendar, and events already on it block their availability. Configured separately from
+  Google sign-in, so it works whichever way people log in.
 
 ## Requirements
 
@@ -126,6 +129,10 @@ against the API, TLS/reverse-proxy setup and the Zitadel wiring.
 | `JWT_SECRET`, `ACCESS_TOKEN_TTL`, `REFRESH_TOKEN_TTL` | our own access/refresh tokens |
 | `AUTH_OIDC_ENABLED` | turns the Zitadel button and `/v2/auth/oidc/*` on or off |
 | `OIDC_ISSUER`, `OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET`, `OIDC_REDIRECT_URI`, `OIDC_SCOPES` | Zitadel app settings. Leave the secret empty for a public (PKCE-only) client |
+| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI` | one Google Cloud OAuth client, shared by sign-in and calendar linking |
+| `AUTH_GOOGLE_ENABLED` | turns the "Continue with Google" button and `/v2/auth/google/*` on or off |
+| `GOOGLE_CALENDAR_ENABLED` | turns calendar linking (Settings → Calendars, `/v2/calendars/*`) on or off, independently of the login button |
+| `GOOGLE_CREATE_MEET_LINKS` | ask Google for a Meet link on synced events that have no location of their own |
 | `AUTH_GUEST_ENABLED`, `GUEST_AUTO_CREATE` | guest login for local testing |
 | `EXPOSE_VERIFICATION_CODES` | returns booker email codes in the API response — local only, it defeats the check |
 | `ALLOW_PRIVATE_WEBHOOK_TARGETS` | allows webhook URLs pointing at private/loopback addresses |
@@ -133,6 +140,22 @@ against the API, TLS/reverse-proxy setup and the Zitadel wiring.
 | `SERVE_WEB` | serve the built web bundle from the API process (single-container hosting) |
 
 Register `http://localhost:3001/v2/auth/oidc/callback` as the redirect URI in Zitadel.
+
+### Google setup
+
+In [Google Cloud Console](https://console.cloud.google.com/), create an OAuth 2.0 Client ID
+of type *Web application* and:
+
+1. add `http://localhost:3001/v2/auth/google/callback` (your `API_ORIGIN` in production) as
+   an **Authorized redirect URI** — sign-in and calendar linking both come back to it;
+2. add `http://localhost:5173` (your `WEB_ORIGIN`) as an **Authorized JavaScript origin**;
+3. for calendar linking, enable the **Google Calendar API** on the project and add the
+   `calendar.events` and `calendar.readonly` scopes to the consent screen.
+
+Then set `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` and switch on whichever of
+`AUTH_GOOGLE_ENABLED` and `GOOGLE_CALENDAR_ENABLED` you want. They are independent: a
+deployment can hide the Google login button and still offer calendar linking under
+Settings → Calendars.
 
 ## Features
 
@@ -149,6 +172,18 @@ hidden events, custom calendar event name, redirect on booking.
 request-reschedule, confirm/decline, mark absent, reassign (round robin), guests, seated
 bookings, ICS and Google/Outlook calendar links, outbound webhooks.
 
+**Calendar view** — `/calendar` shows every booking you can see in day, week or month form,
+filtered to your own bookings or any team you belong to, with cancelled bookings hidden by
+default. Clicking an event opens its booking page; clicking a month cell drills into that day.
+
+**Google Calendar sync** — each user can link one or more Google accounts under
+Settings → Calendars, pick which calendar bookings are written to, and toggle the two
+directions separately: *add confirmed bookings to this calendar* and *block my availability
+with events from this calendar*. Confirming, cancelling, rescheduling and reassigning a
+booking all update the Google event; a booking awaiting confirmation is only written once it
+is confirmed. Every sync is best effort — Google being unreachable never fails a booking, and
+a grant Google stops honouring is flagged on the settings page for reconnection.
+
 **Organizations and teams** — organizations own teams, members are added or invited,
 roles OWNER/ADMIN/MEMBER, team event types with `collective` (intersection of hosts),
 `roundRobin` (union, least-recently-booked host wins) or `managed` scheduling, plus
@@ -163,7 +198,8 @@ that person's own event types directly.
 db/migrations/          SQL schema
 server/src/lib/         tz.ts, interval.ts, slots.ts  <- slot generation engine
 server/src/modules/     one folder per API group (routes + repo)
-server/src/auth/        jwt, oidc (Zitadel), guest, middleware
+server/src/auth/        jwt, oidc (Zitadel), google, guest, middleware
+server/src/lib/google.ts, calendar-sync.ts   Google OAuth + Calendar API, booking mirror
 web/src/ui/             hand-built widget library
 web/src/pages/          one file per screen
 web/src/app/            router, shell, auth context, theme

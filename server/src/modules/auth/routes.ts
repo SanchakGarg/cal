@@ -15,9 +15,28 @@ import {
   exchangeCode,
 } from "../../auth/oidc.ts";
 import {
+  GOOGLE_FLOW_COOKIE,
+  consumeNonce,
+  openState,
+  safeReturnTo,
+  sealState,
+} from "../../auth/google-flow.ts";
+import {
+  LOGIN_SCOPES,
+  assertGoogleLoginEnabled,
+  authorizeUrl as googleAuthorizeUrl,
+  exchangeCode as googleExchangeCode,
+  assertGoogleCalendarEnabled,
+  googleCalendarReady,
+  googleLoginReady,
+  profileFrom,
+} from "../../lib/google.ts";
+import { upsertConnection } from "../calendars/repo.ts";
+import {
   bootstrapNewUser,
   createUser,
   findUserByEmail,
+  findUserByGoogleSubject,
   findUserBySubject,
   type UserRow,
 } from "../../auth/users.ts";
@@ -85,7 +104,15 @@ authRouter.get(
         label: "Zitadel",
         authorizeUrl: `${env.apiOrigin}/v2/auth/oidc/authorize`,
       },
+      google: {
+        enabled: googleLoginReady(),
+        label: "Google",
+        authorizeUrl: `${env.apiOrigin}/v2/auth/google/authorize`,
+      },
       guest: { enabled: env.guest.enabled },
+      // Calendar linking is configured separately from Google sign-in, so the
+      // settings page can offer it even when the login button is hidden.
+      googleCalendar: { enabled: googleCalendarReady() },
     });
   })
 );
@@ -161,6 +188,129 @@ authRouter.get(
     res.redirect(redirect.toString());
   })
 );
+
+// --- Google -------------------------------------------------------------
+// Sign-in and calendar linking share this callback; `state` says which flow it
+// is. Sign-in is a top-level navigation, so it can also pin the state to a
+// cookie; the calendar flow is started from the app and uses a single-use nonce.
+
+authRouter.get(
+  "/google/authorize",
+  handler(async (req, res) => {
+    assertGoogleLoginEnabled();
+    const returnTo = safeReturnTo(req.query.returnTo);
+    const { token, nonce } = await sealState({ mode: "login", returnTo });
+    res.cookie(GOOGLE_FLOW_COOKIE, nonce, {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: env.apiOrigin.startsWith("https://"),
+      maxAge: 600_000,
+      path: "/",
+    });
+    res.redirect(googleAuthorizeUrl({ state: token, scopes: LOGIN_SCOPES }));
+  })
+);
+
+authRouter.get(
+  "/google/callback",
+  handler(async (req, res) => {
+    if (req.query.error) {
+      throw badRequest(`Google returned an error: ${String(req.query.error)}`);
+    }
+    if (typeof req.query.code !== "string" || typeof req.query.state !== "string") {
+      throw badRequest("Invalid Google callback parameters");
+    }
+    const flow = await openState(req.query.state);
+    consumeNonce(flow.nonce);
+
+    if (flow.mode === "calendar") {
+      // Re-checked here: the feature may have been switched off mid-flow.
+      assertGoogleCalendarEnabled();
+      await completeCalendarConnect(flow.userId, req.query.code);
+      res.clearCookie(GOOGLE_FLOW_COOKIE, { path: "/" });
+      const back = new URL(flow.returnTo);
+      back.searchParams.set("calendar", "connected");
+      res.redirect(back.toString());
+      return;
+    }
+
+    assertGoogleLoginEnabled();
+    // The cookie is what proves this browser started the sign-in.
+    const cookieNonce = readCookie(req.header("cookie"), GOOGLE_FLOW_COOKIE);
+    if (cookieNonce !== flow.nonce) {
+      throw badRequest("Google sign-in flow expired, please start again");
+    }
+
+    const tokenSet = await googleExchangeCode(req.query.code);
+    const profile = await profileFrom(tokenSet);
+    // An unverified address could belong to someone else, and matching on it
+    // below would hand over their account.
+    if (!profile.emailVerified) {
+      throw badRequest("Your Google account's email address is not verified");
+    }
+
+    let user: UserRow | null = await findUserByGoogleSubject(profile.subject);
+    let isNew = false;
+    if (!user) {
+      user = await findUserByEmail(profile.email);
+      if (user) {
+        if (user.is_guest) {
+          throw forbidden("That email is already in use by a guest account");
+        }
+        await query("UPDATE users SET google_subject = $1, updated_at = now() WHERE id = $2", [
+          profile.subject,
+          user.id,
+        ]);
+      } else {
+        const timeZone = "Europe/London";
+        user = await createUser({
+          email: profile.email,
+          name: profile.name,
+          googleSubject: profile.subject,
+          avatarUrl: profile.picture ?? null,
+          timeZone,
+        });
+        await bootstrapNewUser(user, timeZone);
+        isNew = true;
+      }
+    }
+
+    const tokens = await tokensFor(user.id);
+    res.clearCookie(GOOGLE_FLOW_COOKIE, { path: "/" });
+
+    const redirect = new URL("/auth/callback", flow.returnTo || env.webOrigin);
+    redirect.hash = new URLSearchParams({
+      access_token: tokens.accessToken,
+      refresh_token: tokens.refreshToken,
+      expires_in: String(tokens.expiresIn),
+      new_user: String(isNew || !user.completed_onboarding),
+    }).toString();
+    res.redirect(redirect.toString());
+  })
+);
+
+/** Stores the calendar grant the user just approved. */
+async function completeCalendarConnect(userId: number | undefined, code: string): Promise<void> {
+  if (!userId) throw badRequest("This calendar link is missing its account");
+  const tokenSet = await googleExchangeCode(code);
+  const profile = await profileFrom(tokenSet);
+  if (!tokenSet.refreshToken) {
+    // Without one we could only write events for the next hour.
+    throw badRequest(
+      "Google did not return a refresh token. Remove this app from your Google account's " +
+        "third-party access list and connect again."
+    );
+  }
+  await upsertConnection({
+    userId,
+    email: profile.email,
+    subject: profile.subject || null,
+    accessToken: tokenSet.accessToken,
+    refreshToken: tokenSet.refreshToken,
+    expiresAt: tokenSet.expiresAt,
+    scopes: tokenSet.scopes,
+  });
+}
 
 /** Guest login: no provider, straight to a throwaway account for local testing.
  *

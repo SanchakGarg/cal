@@ -1,0 +1,318 @@
+.cal-calendar__toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 4px 0 16px;
+}
+
+.cal-calendar__nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cal-calendar__heading {
+  margin: 0 0 0 6px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--cal-text-emphasis);
+  white-space: nowrap;
+}
+
+.cal-calendar__controls {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.cal-calendar {
+  overflow: hidden;
+  padding: 0;
+}
+
+.cal-calendar__head {
+  display: grid;
+  border-bottom: 1px solid var(--cal-border-subtle);
+  background: var(--cal-bg-subtle);
+}
+
+.cal-calendar__head--month {
+  grid-template-columns: repeat(7, 1fr);
+}
+
+.cal-calendar__daylabel {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 4px;
+  border-left: 1px solid var(--cal-border-subtle);
+}
+
+.cal-calendar__head--month .cal-calendar__daylabel:first-child,
+.cal-calendar__head .cal-calendar__daylabel:first-of-type {
+  border-left: none;
+}
+
+.cal-calendar__dayname {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--cal-text-subtle);
+}
+
+.cal-calendar__daynum {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--cal-text-emphasis);
+}
+
+.cal-calendar__daylabel.is-today .cal-calendar__daynum {
+  display: inline-grid;
+  place-items: center;
+  min-width: 24px;
+  height: 24px;
+  border-radius: var(--cal-radius-full);
+  background: var(--cal-brand);
+  color: var(--cal-brand-text);
+  font-size: 13px;
+}
+
+.cal-calendar__scroll {
+  max-height: 62vh;
+  overflow-y: auto;
+}
+
+.cal-calendar__body {
+  display: grid;
+  position: relative;
+}
+
+.cal-calendar__gutter {
+  position: relative;
+}
+
+.cal-calendar__hourlabel {
+  position: relative;
+  padding-right: 8px;
+  text-align: right;
+  font-size: 11px;
+  color: var(--cal-text-muted);
+  transform: translateY(-6px);
+}
+
+.cal-calendar__column {
+  position: relative;
+  border-left: 1px solid var(--cal-border-subtle);
+}
+
+.cal-calendar__hourline {
+  border-bottom: 1px solid var(--cal-border-subtle);
+}
+
+.cal-calendar__now {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 0;
+  border-top: 2px solid var(--cal-danger);
+  z-index: 2;
+  pointer-events: none;
+}
+
+.cal-calendar__now::before {
+  content: "";
+  position: absolute;
+  left: -4px;
+  top: -4px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--cal-danger);
+}
+
+/* Events are tinted per event type via --cal-event-hue. */
+.cal-event {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  overflow: hidden;
+  padding: 3px 6px;
+  border-radius: var(--cal-radius-sm);
+  border: 1px solid hsl(var(--cal-event-hue) 60% 70%);
+  border-left: 3px solid hsl(var(--cal-event-hue) 55% 45%);
+  background: hsl(var(--cal-event-hue) 70% 95%);
+  color: hsl(var(--cal-event-hue) 45% 22%);
+  text-align: left;
+  font-size: 11px;
+  line-height: 1.25;
+  cursor: pointer;
+  z-index: 1;
+}
+
+.cal-event:hover {
+  background: hsl(var(--cal-event-hue) 70% 90%);
+}
+
+.cal-event__time {
+  font-variant-numeric: tabular-nums;
+  opacity: 0.8;
+}
+
+.cal-event__title {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cal-event.is-cancelled {
+  opacity: 0.55;
+}
+
+.cal-event.is-cancelled .cal-event__title {
+  text-decoration: line-through;
+}
+
+.cal-calendar__month {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+}
+
+.cal-calendar__cell {
+  min-height: 104px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px;
+  border-left: 1px solid var(--cal-border-subtle);
+  border-bottom: 1px solid var(--cal-border-subtle);
+}
+
+.cal-calendar__cell:nth-child(7n + 1) {
+  border-left: none;
+}
+
+.cal-calendar__cell.is-outside {
+  background: var(--cal-bg-subtle);
+}
+
+.cal-calendar__cell.is-outside .cal-calendar__celldate {
+  color: var(--cal-text-muted);
+}
+
+.cal-calendar__celldate {
+  align-self: flex-start;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: var(--cal-radius-full);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--cal-text);
+  background: transparent;
+  cursor: pointer;
+}
+
+.cal-calendar__celldate:hover {
+  background: var(--cal-bg-muted);
+}
+
+.cal-calendar__cell.is-today .cal-calendar__celldate {
+  background: var(--cal-brand);
+  color: var(--cal-brand-text);
+}
+
+.cal-calendar__cellitems {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.cal-chip {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  padding: 2px 5px;
+  border-radius: 4px;
+  font-size: 11px;
+  color: var(--cal-text);
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+}
+
+.cal-chip:hover {
+  background: var(--cal-bg-muted);
+}
+
+.cal-chip__dot {
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: hsl(var(--cal-event-hue) 55% 50%);
+}
+
+.cal-chip__time {
+  flex: none;
+  font-variant-numeric: tabular-nums;
+  color: var(--cal-text-subtle);
+}
+
+.cal-chip__title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cal-chip.is-cancelled .cal-chip__title {
+  text-decoration: line-through;
+  color: var(--cal-text-muted);
+}
+
+.cal-calendar__more {
+  align-self: flex-start;
+  padding: 1px 5px;
+  font-size: 11px;
+  color: var(--cal-text-subtle);
+  background: transparent;
+  cursor: pointer;
+}
+
+.cal-calendar__more:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 720px) {
+  .cal-calendar__cell {
+    min-height: 76px;
+  }
+
+  .cal-chip__time {
+    display: none;
+  }
+
+  .cal-calendar__heading {
+    width: 100%;
+    margin-left: 0;
+  }
+}
+
+/* The event tint has to stay readable on the dark palette. */
+[data-theme="dark"] .cal-event {
+  border-color: hsl(var(--cal-event-hue) 30% 34%);
+  border-left-color: hsl(var(--cal-event-hue) 55% 55%);
+  background: hsl(var(--cal-event-hue) 30% 18%);
+  color: hsl(var(--cal-event-hue) 60% 88%);
+}
+
+[data-theme="dark"] .cal-event:hover {
+  background: hsl(var(--cal-event-hue) 30% 23%);
+}

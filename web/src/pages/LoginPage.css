@@ -45,6 +45,29 @@
   background: var(--cal-brand-hover);
 }
 
+.cal-auth__google {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  height: 42px;
+  border-radius: var(--cal-radius-sm);
+  border: 1px solid var(--cal-border);
+  background: var(--cal-bg);
+  color: var(--cal-text-emphasis);
+  font-weight: 500;
+}
+
+.cal-auth__google:hover {
+  background: var(--cal-bg-subtle);
+}
+
+.cal-auth__providers {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
 .cal-auth__divider {
   display: flex;
   align-items: center;

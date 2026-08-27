@@ -10,12 +10,14 @@ import type { Me, OooEntry } from "../lib/types.ts";
 import { formatDateISO } from "../lib/time.ts";
 import { useAuth } from "../app/auth.tsx";
 import { useRouter } from "../app/router.tsx";
+import { CalendarSettings } from "./CalendarSettings.tsx";
 
-type SettingsTab = "profile" | "general" | "out-of-office";
+export type SettingsTab = "profile" | "general" | "calendars" | "out-of-office";
 
-const TABS: Array<{ value: SettingsTab; label: string }> = [
+export const SETTINGS_TABS: Array<{ value: SettingsTab; label: string }> = [
   { value: "profile", label: "Profile" },
   { value: "general", label: "General" },
+  { value: "calendars", label: "Calendars" },
   { value: "out-of-office", label: "Out of office" },
 ];
 
@@ -24,10 +26,11 @@ export function SettingsPage({ tab }: { tab: SettingsTab }) {
   return (
     <>
       <PageHeader title="Settings" subtitle="Manage your account and how you appear to bookers." />
-      <Tabs tabs={TABS} value={tab} onChange={(next) => navigate(`/settings/${next}`)} />
+      <Tabs tabs={SETTINGS_TABS} value={tab} onChange={(next) => navigate(`/settings/${next}`)} />
       <div style={{ paddingTop: 16, display: "flex", flexDirection: "column", gap: 16 }}>
         {tab === "profile" ? <ProfileSettings /> : null}
         {tab === "general" ? <GeneralSettings /> : null}
+        {tab === "calendars" ? <CalendarSettings /> : null}
         {tab === "out-of-office" ? <OutOfOfficeSettings /> : null}
       </div>
     </>

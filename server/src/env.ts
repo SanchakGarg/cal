@@ -86,6 +86,20 @@ export const env = {
     postLogoutRedirectUri: str("OIDC_POST_LOGOUT_REDIRECT_URI", "http://localhost:5173/auth/login"),
   },
 
+  // One Google Cloud OAuth client backs two independent features: sign-in and
+  // calendar linking. Either can be on without the other, so they are separate
+  // flags over shared credentials.
+  google: {
+    clientId: process.env.GOOGLE_CLIENT_ID ?? "",
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? "",
+    redirectUri: str("GOOGLE_REDIRECT_URI", "http://localhost:3001/v2/auth/google/callback"),
+    loginEnabled: bool("AUTH_GOOGLE_ENABLED", false),
+    calendarEnabled: bool("GOOGLE_CALENDAR_ENABLED", false),
+    // Create a Google Meet link on synced events when the event type has no
+    // location of its own.
+    createMeetLinks: bool("GOOGLE_CREATE_MEET_LINKS", false),
+  },
+
   guest: {
     enabled: bool("AUTH_GUEST_ENABLED", true),
     autoCreate: bool("GUEST_AUTO_CREATE", true),

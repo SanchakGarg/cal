@@ -11,6 +11,7 @@ import { BookerPage } from "./pages/BookerPage.tsx";
 import { BookingDetailPage } from "./pages/BookingDetailPage.tsx";
 import { BookingCancelPage } from "./pages/BookingCancelPage.tsx";
 import { BookingsPage, type BookingStatus } from "./pages/BookingsPage.tsx";
+import { CalendarPage, type CalendarView } from "./pages/CalendarPage.tsx";
 import { EventTypeCreatePage } from "./pages/EventTypeCreatePage.tsx";
 import { OutOfOfficeCreatePage } from "./pages/OutOfOfficeCreatePage.tsx";
 import { ScheduleCreatePage } from "./pages/ScheduleCreatePage.tsx";
@@ -21,12 +22,13 @@ import { LoginPage } from "./pages/LoginPage.tsx";
 import { OnboardingPage } from "./pages/OnboardingPage.tsx";
 import { OrganizationPage } from "./pages/OrganizationPage.tsx";
 import { ProfilePage } from "./pages/ProfilePage.tsx";
-import { SettingsPage } from "./pages/SettingsPages.tsx";
+import { SETTINGS_TABS, SettingsPage, type SettingsTab } from "./pages/SettingsPages.tsx";
 import { TeamPage, type TeamTab } from "./pages/TeamPage.tsx";
 import { TeamsPage } from "./pages/TeamsPage.tsx";
 import { TroubleshootPage } from "./pages/TroubleshootPage.tsx";
 
 const BOOKING_STATUSES: BookingStatus[] = ["upcoming", "unconfirmed", "recurring", "past", "cancelled"];
+const CALENDAR_VIEWS: CalendarView[] = ["day", "week", "month"];
 
 // Paths that never require a session.
 const PUBLIC_PREFIXES = ["/auth/", "/booking/", "/reschedule/", "/d/", "/team/"];
@@ -36,7 +38,15 @@ export function App() {
   const { me, loading } = useAuth();
 
   const isAppRoute =
-    ["/event-types", "/bookings", "/availability", "/teams", "/settings", "/getting-started"].some(
+    [
+      "/event-types",
+      "/bookings",
+      "/calendar",
+      "/availability",
+      "/teams",
+      "/settings",
+      "/getting-started",
+    ].some(
       (prefix) => path === prefix || path.startsWith(`${prefix}/`)
     );
 
@@ -153,6 +163,16 @@ export function App() {
         </Shell>
       );
     }
+    const calendar = matchPath("/calendar/:view", path);
+    if (calendar || path === "/calendar") {
+      const requested = calendar?.params.view as CalendarView | undefined;
+      const view = requested && CALENDAR_VIEWS.includes(requested) ? requested : "week";
+      return (
+        <Shell wide>
+          <CalendarPage view={view} />
+        </Shell>
+      );
+    }
     if (path === "/teams") {
       return (
         <Shell>
@@ -228,7 +248,8 @@ export function App() {
     }
     const settings = matchPath("/settings/:tab", path);
     if (settings) {
-      const tab = settings.params.tab as "profile" | "general" | "out-of-office";
+      const requested = settings.params.tab as SettingsTab;
+      const tab = SETTINGS_TABS.some((entry) => entry.value === requested) ? requested : "profile";
       return (
         <Shell>
           <SettingsPage tab={tab} />

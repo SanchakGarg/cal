@@ -6,6 +6,7 @@ import { type Tx, query, queryOne, withTransaction } from "../../db/pool.ts";
 import { badRequest, conflict, forbidden, notFound } from "../../http/errors.ts";
 import { isSlotBookable } from "../../lib/slots.ts";
 import { dispatchWebhooks } from "../../lib/webhooks.ts";
+import { invalidateBusyCache, syncBookingToCalendars } from "../../lib/calendar-sync.ts";
 import { addDaysISO } from "../../lib/tz.ts";
 import {
   type BookingAttendeeRow,
@@ -486,8 +487,14 @@ export async function createBooking(input: CreateBookingInput) {
       { userId: eventType.owner_id, teamId: eventType.team_id, eventTypeId: eventType.id },
       booking
     );
+    // Mirror onto the hosts' Google Calendars. A pending booking is skipped
+    // inside the sync and picked up when it is confirmed.
+    await syncBookingToCalendars(booking.id);
   }
-  return bookings.length === 1 ? bookings[0] : bookings;
+  invalidateBusyCache();
+  // The Meet link is only known after the event is created, so re-read.
+  const synced = await Promise.all(created.map(loadBooking));
+  return synced.length === 1 ? synced[0] : synced;
 }
 
 function nextOccurrence(
@@ -588,6 +595,15 @@ export async function cancelBooking(
   }
 
   const result = await loadBooking(uid);
+  await syncBookingToCalendars(booking.id);
+  if (input.cancelSubsequentBookings && booking.recurring_event_uid) {
+    const siblings = await query<{ id: number }>(
+      "SELECT id FROM bookings WHERE recurring_event_uid = $1 AND start_time > $2",
+      [booking.recurring_event_uid, booking.start_time]
+    );
+    for (const sibling of siblings) await syncBookingToCalendars(sibling.id);
+  }
+  invalidateBusyCache();
   await dispatchWebhooks(
     "BOOKING_CANCELLED",
     { userId: eventType?.owner_id, teamId: eventType?.team_id, eventTypeId: eventType?.id },
@@ -616,6 +632,9 @@ export async function setBookingStatus(
   const eventType = booking.event_type_id
     ? await queryOne<EventTypeRow>("SELECT * FROM event_types WHERE id = $1", [booking.event_type_id])
     : null;
+  // Confirming adds the event to the hosts' calendars; declining removes it.
+  await syncBookingToCalendars(booking.id);
+  invalidateBusyCache();
   await dispatchWebhooks(
     status === "accepted" ? "BOOKING_CONFIRMED" : "BOOKING_REJECTED",
     { userId: eventType?.owner_id, teamId: eventType?.team_id, eventTypeId: eventType?.id },
@@ -720,6 +739,11 @@ export async function rescheduleBooking(
   });
 
   void primary;
+  // The old row is now cancelled and the new one takes its place on Google.
+  await syncBookingToCalendars(booking.id);
+  const moved = await queryOne<{ id: number }>("SELECT id FROM bookings WHERE uid = $1", [newUid]);
+  if (moved) await syncBookingToCalendars(moved.id);
+  invalidateBusyCache();
   const result = await loadBooking(newUid);
   await dispatchWebhooks(
     "BOOKING_RESCHEDULED",
@@ -742,6 +766,8 @@ export async function requestReschedule(
      WHERE id = $1`,
     [booking.id, reason ?? null]
   );
+  await syncBookingToCalendars(booking.id);
+  invalidateBusyCache();
   return loadBooking(uid);
 }
 
@@ -822,6 +848,9 @@ export async function reassignBooking(
       newHostId,
     ]);
   });
+  // The event has to leave the previous host's calendar and land on the new one.
+  await syncBookingToCalendars(booking.id);
+  invalidateBusyCache();
   return loadBooking(uid);
 }
 
@@ -836,6 +865,7 @@ export async function updateBookingLocation(
     booking.id,
     location,
   ]);
+  await syncBookingToCalendars(booking.id);
   return loadBooking(uid);
 }
 

@@ -18,6 +18,7 @@ interface NavItem {
 const NAV: NavItem[] = [
   { label: "Event Types", href: "/event-types", icon: "link", match: ["/event-types"] },
   { label: "Bookings", href: "/bookings/upcoming", icon: "calendar", match: ["/bookings"] },
+  { label: "Calendar", href: "/calendar/week", icon: "grid", match: ["/calendar"] },
   { label: "Availability", href: "/availability", icon: "clock", match: ["/availability"] },
   { label: "Teams", href: "/teams", icon: "users", match: ["/teams"] },
 ];
@@ -114,6 +115,7 @@ export function Shell({ children, wide = false }: { children: ReactNode; wide?: 
                 items={[
                   { label: "My profile", onSelect: () => navigate("/settings/profile") },
                   { label: "General settings", onSelect: () => navigate("/settings/general") },
+                  { label: "Calendars", onSelect: () => navigate("/settings/calendars") },
                   { label: "Out of office", onSelect: () => navigate("/settings/out-of-office") },
                   {
                     label: theme === "dark" ? "Light theme" : "Dark theme",
