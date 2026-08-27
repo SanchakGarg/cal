@@ -5,6 +5,7 @@ import {
   bookingCancelledMail,
   bookingConfirmedMail,
   bookingRescheduledMail,
+  rescheduleRequestMail,
   type BookingMailData,
 } from "../../lib/email-templates.ts";
 import { sendMailInBackground } from "../../lib/mail.ts";
@@ -112,6 +113,22 @@ export function notifyBookingRescheduled(booking: Booking, previousStart: Date |
       to: recipient.email,
       ...bookingRescheduledMail(mailData(booking, recipient, previousStart)),
       attachments: [invite(booking)],
+    });
+  }
+}
+
+/**
+ * Only the people who booked are asked to pick a new time — the hosts already
+ * know, they asked. Replies go to the host who requested it.
+ */
+export function notifyRescheduleRequested(booking: Booking, hostEmail?: string): void {
+  const hostAddresses = new Set(booking.hosts.map((host) => host.email.toLowerCase()));
+  for (const recipient of mailRecipients(booking)) {
+    if (hostAddresses.has(recipient.email.toLowerCase())) continue;
+    sendMailInBackground({
+      to: recipient.email,
+      ...rescheduleRequestMail(mailData(booking, recipient)),
+      replyTo: hostEmail,
     });
   }
 }

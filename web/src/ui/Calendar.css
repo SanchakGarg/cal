@@ -9,6 +9,13 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 8px;
+}
+
+/* The month name takes the room it needs; the arrows stay pinned right. */
+.cal-calendar__head h2 {
+  flex: 1;
+  min-width: 0;
 }
 
 .cal-calendar__head h2 {
@@ -18,7 +25,9 @@
 
 .cal-calendar__nav {
   display: flex;
-  gap: 4px;
+  flex: none;
+  gap: 2px;
+  margin-right: -6px;
 }
 
 .cal-calendar__nav button {
@@ -73,11 +82,12 @@
   justify-content: center;
   border: 0;
   border-radius: var(--cal-radius-sm);
-  background: var(--cal-bg-subtle);
+  background: transparent;
   color: var(--cal-text-muted);
   font-size: var(--cal-text-sm);
-  font-weight: 500;
+  font-weight: var(--cal-weight-medium);
   cursor: not-allowed;
+  transition: background var(--cal-duration-fast) ease, color var(--cal-duration-fast) ease;
 }
 
 .cal-calendar__day {

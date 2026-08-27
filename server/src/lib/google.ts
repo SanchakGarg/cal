@@ -316,7 +316,7 @@ export async function insertEvent(
       method: "POST",
       body: eventBody(input),
       query: {
-        sendUpdates: "all",
+        sendUpdates: "none",
         conferenceDataVersion: input.createMeetLink ? "1" : undefined,
       },
     }
@@ -332,7 +332,7 @@ export async function updateEvent(
   return calendarRequest<GoogleEvent>(
     accessToken,
     `/calendars/${encodeURIComponent(calendarId)}/events/${encodeURIComponent(eventId)}`,
-    { method: "PATCH", body: eventBody(input), query: { sendUpdates: "all" } }
+    { method: "PATCH", body: eventBody(input), query: { sendUpdates: "none" } }
   );
 }
 
@@ -344,7 +344,7 @@ export async function deleteEvent(
   await calendarRequest<void>(
     accessToken,
     `/calendars/${encodeURIComponent(calendarId)}/events/${encodeURIComponent(eventId)}`,
-    { method: "DELETE", query: { sendUpdates: "all" } }
+    { method: "DELETE", query: { sendUpdates: "none" } }
   );
 }
 

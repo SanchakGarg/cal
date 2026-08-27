@@ -247,16 +247,16 @@ export function CalendarPage({ view }: { view: CalendarView }) {
         }
       />
 
-      <div className="cal-calendar__toolbar">
-        <div className="cal-calendar__nav">
+      <div className="cal-cv__toolbar">
+        <div className="cal-cv__nav">
           <IconButton icon="chevronLeft" label="Previous" variant="secondary" size="sm" onClick={() => step(-1)} />
           <Button variant="secondary" size="sm" onClick={() => go(view, todayISO(timeZone))}>
             Today
           </Button>
           <IconButton icon="chevronRight" label="Next" variant="secondary" size="sm" onClick={() => step(1)} />
-          <h2 className="cal-calendar__heading">{heading}</h2>
+          <h2 className="cal-cv__heading">{heading}</h2>
         </div>
-        <div className="cal-calendar__controls">
+        <div className="cal-cv__controls">
           <Switch
             size="sm"
             checked={showCancelled}
@@ -346,31 +346,31 @@ function TimeGrid({ days, bookings, timeZone, timeFormat, onOpen }: GridProps) {
   }, [bookings, timeZone, days.length]);
 
   return (
-    <div className="cal-calendar cal-card">
-      <div className="cal-calendar__head" style={{ gridTemplateColumns: `56px repeat(${days.length}, 1fr)` }}>
+    <div className="cal-cv cal-card">
+      <div className="cal-cv__head" style={{ gridTemplateColumns: `56px repeat(${days.length}, 1fr)` }}>
         <span />
         {days.map((dateISO) => (
           <div
             key={dateISO}
-            className={`cal-calendar__daylabel ${dateISO === todayLocal ? "is-today" : ""}`}
+            className={`cal-cv__daylabel ${dateISO === todayLocal ? "is-today" : ""}`}
           >
-            <span className="cal-calendar__dayname">{WEEKDAY_LABELS[weekdayOfDateISO(dateISO)]}</span>
-            <span className="cal-calendar__daynum">{Number(dateISO.slice(8, 10))}</span>
+            <span className="cal-cv__dayname">{WEEKDAY_LABELS[weekdayOfDateISO(dateISO)]}</span>
+            <span className="cal-cv__daynum">{Number(dateISO.slice(8, 10))}</span>
           </div>
         ))}
       </div>
 
-      <div className="cal-calendar__scroll" ref={scrollRef}>
+      <div className="cal-cv__scroll" ref={scrollRef}>
         <div
-          className="cal-calendar__body"
+          className="cal-cv__body"
           style={{
             gridTemplateColumns: `56px repeat(${days.length}, 1fr)`,
             height: 24 * HOUR_HEIGHT,
           }}
         >
-          <div className="cal-calendar__gutter">
+          <div className="cal-cv__gutter">
             {Array.from({ length: 24 }, (_, hour) => (
-              <div key={hour} className="cal-calendar__hourlabel" style={{ height: HOUR_HEIGHT }}>
+              <div key={hour} className="cal-cv__hourlabel" style={{ height: HOUR_HEIGHT }}>
                 {hour === 0 ? "" : formatHour(hour, timeFormat)}
               </div>
             ))}
@@ -381,9 +381,9 @@ function TimeGrid({ days, bookings, timeZone, timeFormat, onOpen }: GridProps) {
             const items = perDay.get(dateISO) ?? [];
             const laidOut = layout(items, dayStart);
             return (
-              <div key={dateISO} className="cal-calendar__column">
+              <div key={dateISO} className="cal-cv__column">
                 {Array.from({ length: 24 }, (_, hour) => (
-                  <div key={hour} className="cal-calendar__hourline" style={{ height: HOUR_HEIGHT }} />
+                  <div key={hour} className="cal-cv__hourline" style={{ height: HOUR_HEIGHT }} />
                 ))}
                 {dateISO === todayLocal ? <NowLine timeZone={timeZone} /> : null}
                 {laidOut.map(({ booking, top, height, column, columns }) => {
@@ -493,7 +493,7 @@ function NowLine({ timeZone }: { timeZone: string }) {
     const timer = window.setInterval(() => setMinutes(minutesIntoDay(new Date(), timeZone)), 60_000);
     return () => window.clearInterval(timer);
   }, [timeZone]);
-  return <div className="cal-calendar__now" style={{ top: (minutes / 60) * HOUR_HEIGHT }} />;
+  return <div className="cal-cv__now" style={{ top: (minutes / 60) * HOUR_HEIGHT }} />;
 }
 
 function formatHour(hour: number, timeFormat: 12 | 24): string {
@@ -526,32 +526,32 @@ function MonthGrid({
   }, [days, bookings, timeZone]);
 
   return (
-    <div className="cal-calendar cal-card">
-      <div className="cal-calendar__head cal-calendar__head--month">
+    <div className="cal-cv cal-card">
+      <div className="cal-cv__head cal-cv__head--month">
         {days.slice(0, 7).map((dateISO) => (
-          <div key={dateISO} className="cal-calendar__daylabel">
-            <span className="cal-calendar__dayname">{WEEKDAY_LABELS[weekdayOfDateISO(dateISO)]}</span>
+          <div key={dateISO} className="cal-cv__daylabel">
+            <span className="cal-cv__dayname">{WEEKDAY_LABELS[weekdayOfDateISO(dateISO)]}</span>
           </div>
         ))}
       </div>
-      <div className="cal-calendar__month">
+      <div className="cal-cv__month">
         {days.map((dateISO) => {
           const items = perDay.get(dateISO) ?? [];
           return (
             <div
               key={dateISO}
-              className={`cal-calendar__cell ${dateISO.slice(0, 7) === month ? "" : "is-outside"} ${
+              className={`cal-cv__cell ${dateISO.slice(0, 7) === month ? "" : "is-outside"} ${
                 dateISO === todayLocal ? "is-today" : ""
               }`}
             >
               <button
                 type="button"
-                className="cal-calendar__celldate"
+                className="cal-cv__celldate"
                 onClick={() => onPickDay(dateISO)}
               >
                 {Number(dateISO.slice(8, 10))}
               </button>
-              <div className="cal-calendar__cellitems">
+              <div className="cal-cv__cellitems">
                 {items.slice(0, 3).map((booking) => (
                   <button
                     key={booking.uid}
@@ -571,7 +571,7 @@ function MonthGrid({
                 {items.length > 3 ? (
                   <button
                     type="button"
-                    className="cal-calendar__more"
+                    className="cal-cv__more"
                     onClick={() => onPickDay(dateISO)}
                   >
                     +{items.length - 3} more

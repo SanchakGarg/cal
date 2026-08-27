@@ -4,6 +4,7 @@ import {
   bookingCancelledMail,
   bookingConfirmedMail,
   bookingRescheduledMail,
+  rescheduleRequestMail,
   teamInviteMail,
   welcomeMail,
   type BookingMailData,
@@ -176,6 +177,51 @@ test("a host declining reads differently from an attendee cancelling", () => {
   const cancelled = bookingCancelledMail(booking(), false);
   assert.notEqual(declined.html, cancelled.html);
   assert.match(declined.html, /was not approved<\/h1>/);
+});
+
+test("a reschedule request asks for a new time and never states the old one as When", () => {
+  const mail = rescheduleRequestMail(booking({ reason: "Clashes with the board meeting" }));
+  assert.equal(mail.subject, "Please pick a new time — Product design review");
+  assert.match(mail.html, /choose another time/i);
+  assert.match(mail.html, /Clashes with the board meeting/);
+  assert.match(mail.text, /Clashes with the board meeting/);
+  // The released time appears once, struck through — not as a live "When" row.
+  assert.doesNotMatch(mail.html, />When<\/td>/);
+  assert.doesNotMatch(mail.text, /^When:/m);
+  assert.match(mail.html, /line-through/);
+  assert.match(mail.html, /\/reschedule\/bk_123/);
+});
+
+test("a reschedule request with no reason given simply omits it", () => {
+  const mail = rescheduleRequestMail(booking({ reason: null }));
+  assert.doesNotMatch(mail.html, /Reason given/);
+  assert.match(mail.html, /choose another time/i);
+});
+
+test("no template carries an emoji", () => {
+  const emoji = /[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}]/u;
+  for (const mail of [
+    bookingConfirmedMail(booking(), false),
+    bookingConfirmedMail(booking(), true),
+    bookingRescheduledMail(booking({ previousStart: new Date("2026-08-25T09:00:00.000Z") })),
+    bookingCancelledMail(booking(), false),
+    rescheduleRequestMail(booking()),
+    teamInviteMail({ teamName: "Acme", inviterName: "Ada", inviteeEmail: "g@e.com", existingUser: true }),
+    welcomeMail({ name: "Grace", username: "grace" }),
+  ]) {
+    assert.doesNotMatch(mail.subject, emoji, mail.subject);
+    assert.doesNotMatch(mail.html, emoji);
+    assert.doesNotMatch(mail.text, emoji);
+  }
+});
+
+test("every template declares dark mode and restates its colours", () => {
+  for (const mail of [bookingConfirmedMail(booking(), false), welcomeMail({ name: "G", username: "g" })]) {
+    assert.match(mail.html, /name="color-scheme" content="light dark"/);
+    assert.match(mail.html, /prefers-color-scheme: dark/);
+    // Inline styles only lose to !important, so the dark block must use it.
+    assert.match(mail.html, /background: #0d0d0d !important/);
+  }
 });
 
 test("an invite to someone without an account carries the token", () => {

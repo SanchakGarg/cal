@@ -11,6 +11,7 @@ import {
   notifyBookingCreated,
   notifyBookingDecision,
   notifyBookingRescheduled,
+  notifyRescheduleRequested,
 } from "./notify.ts";
 import { invalidateBusyCache, syncBookingToCalendars } from "../../lib/calendar-sync.ts";
 import { addDaysISO } from "../../lib/tz.ts";
@@ -778,7 +779,11 @@ export async function requestReschedule(
   );
   await syncBookingToCalendars(booking.id);
   invalidateBusyCache();
-  return loadBooking(uid);
+  const result = await loadBooking(uid);
+  // The slot is already free at this point, so the mail can honestly ask them
+  // to pick a new time rather than warn that one is about to disappear.
+  notifyRescheduleRequested(result, actor.email ?? undefined);
+  return result;
 }
 
 export async function markAbsent(

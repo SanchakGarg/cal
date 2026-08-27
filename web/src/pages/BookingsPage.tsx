@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { Button, IconButton } from "../ui/Button.tsx";
+import { Dialog } from "../ui/Dialog.tsx";
+import { TextArea } from "../ui/Field.tsx";
 import { Avatar, Badge, EmptyState, List, ListRow, PageHeader, SkeletonList, Tabs } from "../ui/Layout.tsx";
 import { DropdownMenu, Popover } from "../ui/Popover.tsx";
 import { useToast } from "../ui/Toast.tsx";
@@ -35,6 +37,8 @@ export function BookingsPage({ status }: { status: BookingStatus }) {
 
   const [bookings, setBookings] = useState<Booking[] | null>(null);
   const [busyUid, setBusyUid] = useState<string | null>(null);
+  const [rescheduleTarget, setRescheduleTarget] = useState<Booking | null>(null);
+  const [reason, setReason] = useState("");
 
   const load = async (): Promise<void> => {
     setBookings(null);
@@ -50,6 +54,24 @@ export function BookingsPage({ status }: { status: BookingStatus }) {
     void load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status]);
+
+  const requestReschedule = async (): Promise<void> => {
+    if (!rescheduleTarget) return;
+    setBusyUid(rescheduleTarget.uid);
+    try {
+      await api.post(`/v2/bookings/${rescheduleTarget.uid}/request-reschedule`, {
+        reason: reason.trim() || undefined,
+      });
+      toast.success("Asked them to pick a new time");
+      setRescheduleTarget(null);
+      setReason("");
+      await load();
+    } catch (error) {
+      toast.error(errorMessage(error));
+    } finally {
+      setBusyUid(null);
+    }
+  };
 
   const act = async (
     booking: Booking,
@@ -174,7 +196,7 @@ export function BookingsPage({ status }: { status: BookingStatus }) {
                             {
                               label: "Request reschedule",
                               disabled: booking.status === "cancelled",
-                              onSelect: () => void act(booking, "request-reschedule"),
+                              onSelect: () => setRescheduleTarget(booking),
                             },
                             {
                               label: "Mark host absent",
@@ -199,6 +221,43 @@ export function BookingsPage({ status }: { status: BookingStatus }) {
         )}
       </div>
 
+
+      <Dialog
+        open={rescheduleTarget !== null}
+        onClose={() => {
+          setRescheduleTarget(null);
+          setReason("");
+        }}
+        title="Ask for a new time?"
+        description="The current time is released and they are emailed a link to pick another."
+        footer={
+          <>
+            <Button
+              variant="minimal"
+              onClick={() => {
+                setRescheduleTarget(null);
+                setReason("");
+              }}
+            >
+              Keep the time
+            </Button>
+            <Button
+              loading={busyUid === rescheduleTarget?.uid}
+              onClick={() => void requestReschedule()}
+            >
+              Send request
+            </Button>
+          </>
+        }
+      >
+        <TextArea
+          label="Why the change?"
+          hint="Included in the email, so they know what happened."
+          placeholder="Something came up on my side — sorry about the short notice."
+          value={reason}
+          onChange={(event) => setReason(event.target.value)}
+        />
+      </Dialog>
     </>
   );
 }

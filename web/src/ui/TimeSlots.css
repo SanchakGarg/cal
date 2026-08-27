@@ -7,11 +7,13 @@
   padding-right: 4px;
 }
 
+/* One row: the time centred in the button, the capacity count tucked at the
+   right edge so it never pushes the time off centre. */
 .cal-slot {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-direction: column;
   gap: 2px;
   min-height: 38px;
   padding: 6px 12px;
@@ -36,10 +38,25 @@
   color: var(--cal-brand-text);
 }
 
+.cal-slot__time {
+  font-variant-numeric: tabular-nums;
+}
+
 .cal-slot__seats {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
   font-size: var(--cal-text-2xs);
-  font-weight: 400;
+  font-weight: var(--cal-weight-medium);
+  font-variant-numeric: tabular-nums;
   color: var(--cal-text-subtle);
+}
+
+/* Reserve the count's room so the time stays centred in the button. */
+.cal-slot:has(.cal-slot__seats) {
+  padding-left: 44px;
+  padding-right: 44px;
 }
 
 .cal-slot.is-selected .cal-slot__seats {

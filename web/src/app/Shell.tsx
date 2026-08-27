@@ -86,10 +86,6 @@ export function Shell({ children, wide = false }: { children: ReactNode; wide?: 
         </nav>
 
         <div className="cal-sidebar__footer">
-          <Link to="/availability/troubleshoot" className="cal-sidebar__link">
-            <Icon name="search" size={16} />
-            <span>Troubleshoot</span>
-          </Link>
           <Popover
             align="start"
             width={220}

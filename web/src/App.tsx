@@ -25,7 +25,6 @@ import { ProfilePage } from "./pages/ProfilePage.tsx";
 import { SETTINGS_TABS, SettingsPage, type SettingsTab } from "./pages/SettingsPages.tsx";
 import { TeamPage, type TeamTab } from "./pages/TeamPage.tsx";
 import { TeamsPage } from "./pages/TeamsPage.tsx";
-import { TroubleshootPage } from "./pages/TroubleshootPage.tsx";
 
 const BOOKING_STATUSES: BookingStatus[] = ["upcoming", "unconfirmed", "recurring", "past", "cancelled"];
 const CALENDAR_VIEWS: CalendarView[] = ["day", "week", "month"];
@@ -112,13 +111,6 @@ export function App() {
       return (
         <Shell>
           <AvailabilityPage />
-        </Shell>
-      );
-    }
-    if (path === "/availability/troubleshoot") {
-      return (
-        <Shell>
-          <TroubleshootPage />
         </Shell>
       );
     }

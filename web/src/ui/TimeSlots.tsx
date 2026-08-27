@@ -19,12 +19,25 @@ export interface Slot {
 export function capacityLabel(slot: Slot): string | null {
   if (slot.seatsRemaining !== undefined && slot.seatsTotal !== undefined) {
     if (slot.seatsRemaining <= 0) return "Full";
-    return `${slot.seatsRemaining} of ${slot.seatsTotal} seats left`;
+    return `${slot.seatsRemaining}/${slot.seatsTotal}`;
   }
   if (slot.hostsAvailable !== undefined && slot.hostsTotal !== undefined) {
-    return `${slot.hostsAvailable}/${slot.hostsTotal} available`;
+    return `${slot.hostsAvailable}/${slot.hostsTotal}`;
   }
   return null;
+}
+
+/** The long form, for the tooltip — "2/2" alone does not say what it counts. */
+export function capacityTitle(slot: Slot): string | undefined {
+  if (slot.seatsRemaining !== undefined && slot.seatsTotal !== undefined) {
+    return slot.seatsRemaining <= 0
+      ? "No seats left"
+      : `${slot.seatsRemaining} of ${slot.seatsTotal} seats left`;
+  }
+  if (slot.hostsAvailable !== undefined && slot.hostsTotal !== undefined) {
+    return `${slot.hostsAvailable} of ${slot.hostsTotal} hosts free at this time`;
+  }
+  return undefined;
 }
 
 interface TimeSlotColumnProps {
@@ -67,9 +80,12 @@ export function TimeSlotColumn({
           key={slot.start}
           type="button"
           className={`cal-slot ${selected === slot.start ? "is-selected" : ""}`}
+          title={capacityTitle(slot)}
           onClick={() => onSelect(slot.start)}
         >
-          <span>{formatTime(new Date(slot.start), timeZone, timeFormat)}</span>
+          <span className="cal-slot__time">
+            {formatTime(new Date(slot.start), timeZone, timeFormat)}
+          </span>
           {capacityLabel(slot) ? <span className="cal-slot__seats">{capacityLabel(slot)}</span> : null}
         </button>
       ))}

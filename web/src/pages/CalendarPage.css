@@ -1,4 +1,4 @@
-.cal-calendar__toolbar {
+.cal-cv__toolbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -7,13 +7,13 @@
   padding: 4px 0 16px;
 }
 
-.cal-calendar__nav {
+.cal-cv__nav {
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
-.cal-calendar__heading {
+.cal-cv__heading {
   margin: 0 0 0 6px;
   font-size: var(--cal-text-lg);
   font-weight: 600;
@@ -21,29 +21,29 @@
   white-space: nowrap;
 }
 
-.cal-calendar__controls {
+.cal-cv__controls {
   display: flex;
   align-items: center;
   gap: 16px;
   flex-wrap: wrap;
 }
 
-.cal-calendar {
+.cal-cv {
   overflow: hidden;
   padding: 0;
 }
 
-.cal-calendar__head {
+.cal-cv__head {
   display: grid;
   border-bottom: 1px solid var(--cal-border-subtle);
   background: var(--cal-bg-subtle);
 }
 
-.cal-calendar__head--month {
+.cal-cv__head--month {
   grid-template-columns: repeat(7, 1fr);
 }
 
-.cal-calendar__daylabel {
+.cal-cv__daylabel {
   display: flex;
   align-items: baseline;
   justify-content: center;
@@ -52,25 +52,25 @@
   border-left: 1px solid var(--cal-border-subtle);
 }
 
-.cal-calendar__head--month .cal-calendar__daylabel:first-child,
-.cal-calendar__head .cal-calendar__daylabel:first-of-type {
+.cal-cv__head--month .cal-cv__daylabel:first-child,
+.cal-cv__head .cal-cv__daylabel:first-of-type {
   border-left: none;
 }
 
-.cal-calendar__dayname {
+.cal-cv__dayname {
   font-size: var(--cal-text-2xs);
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--cal-text-subtle);
 }
 
-.cal-calendar__daynum {
+.cal-cv__daynum {
   font-size: var(--cal-text-md);
   font-weight: 600;
   color: var(--cal-text-emphasis);
 }
 
-.cal-calendar__daylabel.is-today .cal-calendar__daynum {
+.cal-cv__daylabel.is-today .cal-cv__daynum {
   display: inline-grid;
   place-items: center;
   min-width: 24px;
@@ -81,21 +81,21 @@
   font-size: var(--cal-text-sm);
 }
 
-.cal-calendar__scroll {
+.cal-cv__scroll {
   max-height: 62vh;
   overflow-y: auto;
 }
 
-.cal-calendar__body {
+.cal-cv__body {
   display: grid;
   position: relative;
 }
 
-.cal-calendar__gutter {
+.cal-cv__gutter {
   position: relative;
 }
 
-.cal-calendar__hourlabel {
+.cal-cv__hourlabel {
   position: relative;
   padding-right: 8px;
   text-align: right;
@@ -104,16 +104,16 @@
   transform: translateY(-6px);
 }
 
-.cal-calendar__column {
+.cal-cv__column {
   position: relative;
   border-left: 1px solid var(--cal-border-subtle);
 }
 
-.cal-calendar__hourline {
+.cal-cv__hourline {
   border-bottom: 1px solid var(--cal-border-subtle);
 }
 
-.cal-calendar__now {
+.cal-cv__now {
   position: absolute;
   left: 0;
   right: 0;
@@ -123,7 +123,7 @@
   pointer-events: none;
 }
 
-.cal-calendar__now::before {
+.cal-cv__now::before {
   content: "";
   position: absolute;
   left: -4px;
@@ -209,12 +209,12 @@
   text-decoration: line-through;
 }
 
-.cal-calendar__month {
+.cal-cv__month {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
 }
 
-.cal-calendar__cell {
+.cal-cv__cell {
   min-height: 104px;
   display: flex;
   flex-direction: column;
@@ -224,19 +224,19 @@
   border-bottom: 1px solid var(--cal-border-subtle);
 }
 
-.cal-calendar__cell:nth-child(7n + 1) {
+.cal-cv__cell:nth-child(7n + 1) {
   border-left: none;
 }
 
-.cal-calendar__cell.is-outside {
+.cal-cv__cell.is-outside {
   background: var(--cal-bg-subtle);
 }
 
-.cal-calendar__cell.is-outside .cal-calendar__celldate {
+.cal-cv__cell.is-outside .cal-cv__celldate {
   color: var(--cal-text-muted);
 }
 
-.cal-calendar__celldate {
+.cal-cv__celldate {
   align-self: flex-start;
   min-width: 22px;
   height: 22px;
@@ -249,16 +249,16 @@
   cursor: pointer;
 }
 
-.cal-calendar__celldate:hover {
+.cal-cv__celldate:hover {
   background: var(--cal-bg-muted);
 }
 
-.cal-calendar__cell.is-today .cal-calendar__celldate {
+.cal-cv__cell.is-today .cal-cv__celldate {
   background: var(--cal-brand);
   color: var(--cal-brand-text);
 }
 
-.cal-calendar__cellitems {
+.cal-cv__cellitems {
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -308,7 +308,7 @@
   color: var(--cal-text-muted);
 }
 
-.cal-calendar__more {
+.cal-cv__more {
   align-self: flex-start;
   padding: 1px 5px;
   font-size: var(--cal-text-2xs);
@@ -317,12 +317,12 @@
   cursor: pointer;
 }
 
-.cal-calendar__more:hover {
+.cal-cv__more:hover {
   text-decoration: underline;
 }
 
 @media (max-width: 720px) {
-  .cal-calendar__cell {
+  .cal-cv__cell {
     min-height: 76px;
   }
 
@@ -330,7 +330,7 @@
     display: none;
   }
 
-  .cal-calendar__heading {
+  .cal-cv__heading {
     width: 100%;
     margin-left: 0;
   }

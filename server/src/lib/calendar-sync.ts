@@ -32,6 +32,15 @@ interface SyncBookingRow {
   status: string;
   location: string;
   meeting_url: string | null;
+  event_type_id: number | null;
+  booking_fields_responses: Record<string, unknown> | null;
+}
+
+/** The question labels, so answers read as questions rather than as slugs. */
+interface BookingFieldMeta {
+  slug: string;
+  label?: string;
+  type?: string;
 }
 
 interface SyncedEventRow {
@@ -43,42 +52,106 @@ interface SyncedEventRow {
 
 async function loadSyncContext(bookingId: number) {
   const booking = await queryOne<SyncBookingRow>(
-    `SELECT id, uid, title, description, start_time, end_time, status, location, meeting_url
+    `SELECT id, uid, title, description, start_time, end_time, status, location, meeting_url,
+            event_type_id, booking_fields_responses
      FROM bookings WHERE id = $1`,
     [bookingId]
   );
   if (!booking) return null;
 
-  const [hosts, attendees, synced] = await Promise.all([
+  const [hosts, attendees, synced, fields] = await Promise.all([
     query<{ user_id: number }>("SELECT user_id FROM booking_hosts WHERE booking_id = $1", [
       bookingId,
     ]),
-    query<{ name: string; email: string }>(
-      "SELECT name, email FROM booking_attendees WHERE booking_id = $1 ORDER BY id",
+    query<{ name: string; email: string; is_guest: boolean }>(
+      "SELECT name, email, is_guest FROM booking_attendees WHERE booking_id = $1 ORDER BY id",
       [bookingId]
     ),
     query<SyncedEventRow>(
       "SELECT id, connection_id, calendar_id, event_id FROM booking_calendar_events WHERE booking_id = $1",
       [bookingId]
     ),
+    booking.event_type_id
+      ? queryOne<{ booking_fields: BookingFieldMeta[] | null }>(
+          "SELECT booking_fields FROM event_types WHERE id = $1",
+          [booking.event_type_id]
+        )
+      : Promise.resolve(null),
   ]);
-  return { booking, hostIds: hosts.map((host) => host.user_id), attendees, synced };
+  return {
+    booking,
+    hostIds: hosts.map((host) => host.user_id),
+    attendees,
+    synced,
+    fields: fields?.booking_fields ?? [],
+  };
+}
+
+/** Fields the booker never fills in themselves, so they are not "answers". */
+const SYSTEM_FIELDS = new Set([
+  "name",
+  "email",
+  "location",
+  "guests",
+  "notes",
+  "rescheduleReason",
+  "title",
+  "splitName",
+]);
+
+/** One answer per line, labelled the way the question was asked. */
+function answerLines(booking: SyncBookingRow, fields: BookingFieldMeta[]): string[] {
+  const responses = booking.booking_fields_responses ?? {};
+  const labelFor = new Map(fields.map((field) => [field.slug, field.label || field.slug]));
+  const lines: string[] = [];
+
+  for (const [slug, answer] of Object.entries(responses)) {
+    if (SYSTEM_FIELDS.has(slug)) continue;
+    if (answer === null || answer === undefined || answer === "") continue;
+    const text = Array.isArray(answer) ? answer.join(", ") : String(answer);
+    if (!text.trim()) continue;
+    lines.push(`${labelFor.get(slug) ?? slug}: ${text}`);
+  }
+  // Notes are a system field but they are still something the booker wrote.
+  const notes = responses.notes;
+  if (typeof notes === "string" && notes.trim()) lines.push(`Notes: ${notes.trim()}`);
+  return lines;
 }
 
 function eventInput(
   booking: SyncBookingRow,
-  attendees: Array<{ name: string; email: string }>,
+  attendees: Array<{ name: string; email: string; is_guest: boolean }>,
+  fields: BookingFieldMeta[],
   withMeet: boolean
 ): GoogleEventInput {
-  const lines = [booking.description].filter(Boolean);
-  lines.push(`Booked with Cal — reference ${booking.uid}`);
+  const sections = [booking.description].filter(Boolean) as string[];
+
+  // The booker is not invited to this event, so the description has to say who
+  // it is with — otherwise the calendar entry is a meeting with nobody.
+  const who = attendees.filter((attendee) => !attendee.is_guest);
+  const guests = attendees.filter((attendee) => attendee.is_guest);
+  if (who.length > 0) {
+    sections.push(who.map((attendee) => `${attendee.name} (${attendee.email})`).join("\n"));
+  }
+  if (guests.length > 0) {
+    sections.push(`Guests: ${guests.map((guest) => guest.email).join(", ")}`);
+  }
+
+  const answers = answerLines(booking, fields);
+  if (answers.length > 0) sections.push(answers.join("\n"));
+
+  sections.push(`Booked with Cal — reference ${booking.uid}`);
+
   return {
     summary: booking.title,
-    description: lines.join("\n\n"),
+    description: sections.join("\n\n"),
     location: booking.meeting_url || booking.location,
     start: booking.start_time,
     end: booking.end_time,
-    attendees: attendees.map((attendee) => ({ email: attendee.email, displayName: attendee.name })),
+    // Deliberately nobody: the event is the host's own record of the booking.
+    // Cal has already emailed everyone, and adding Google attendees would make
+    // Google send its own invitations and cancellations on top.
+    attendees: undefined,
     sourceUid: booking.uid,
     createMeetLink: withMeet,
   };
@@ -107,7 +180,7 @@ export async function syncBookingToCalendars(bookingId: number): Promise<void> {
   try {
     const context = await loadSyncContext(bookingId);
     if (!context) return;
-    const { booking, hostIds, attendees, synced } = context;
+    const { booking, hostIds, attendees, synced, fields } = context;
 
     // Only confirmed bookings belong on a calendar; anything else must not.
     const shouldExist = booking.status === "accepted";
@@ -140,7 +213,7 @@ export async function syncBookingToCalendars(bookingId: number): Promise<void> {
               token,
               existing.calendar_id,
               existing.event_id,
-              eventInput(booking, attendees, false)
+              eventInput(booking, attendees, fields, false)
             );
             continue;
           }
@@ -150,7 +223,7 @@ export async function syncBookingToCalendars(bookingId: number): Promise<void> {
         const event = await insertEvent(
           token,
           connection.calendar_id,
-          eventInput(booking, attendees, wantsMeet)
+          eventInput(booking, attendees, fields, wantsMeet)
         );
         await query(
           `INSERT INTO booking_calendar_events

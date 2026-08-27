@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Button, IconButton } from "../ui/Button.tsx";
+import { Button } from "../ui/Button.tsx";
 import { TextField } from "../ui/Field.tsx";
 import { PageHeader, Skeleton } from "../ui/Layout.tsx";
 import { Switch } from "../ui/Switch.tsx";
@@ -131,12 +131,6 @@ export function AvailabilityDetailPage({ scheduleId }: { scheduleId: number }) {
             <div className="cal-row cal-availability__default">
               <Switch checked={isDefault} onChange={setIsDefault} size="sm" label="Set to default" />
             </div>
-            <IconButton
-              icon="search"
-              label="Troubleshoot"
-              variant="secondary"
-              onClick={() => navigate("/availability/troubleshoot")}
-            />
             <Button loading={saving} disabled={!dirty} onClick={() => void save()}>
               Save
             </Button>

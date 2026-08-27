@@ -5,10 +5,21 @@ import { env } from "../env.ts";
 import { DEFAULT_TIME_ZONE } from "./tz.ts";
 import type { Mail } from "./mail.ts";
 
+// Light values are inlined on every element, because that is the only styling
+// some clients keep. The dark set is applied from a <style> block with
+// !important, which is the only way to beat an inline style.
 const INK = "#111827";
 const MUTED = "#6b7280";
 const LINE = "#e5e7eb";
 const PAPER = "#f9fafb";
+const CARD = "#ffffff";
+
+const DARK_PAGE = "#0d0d0d";
+const DARK_CARD = "#161616";
+const DARK_INK = "#f4f4f5";
+const DARK_MUTED = "#a1a1aa";
+const DARK_LINE = "#2a2a2a";
+const DARK_PANEL = "#1f1f1f";
 
 /** Escapes text before it goes into an HTML body. */
 function esc(value: string): string {
@@ -70,34 +81,63 @@ function timeRange(data: BookingMailData): string {
 }
 
 /**
- * One shell for every message: a small header, a body, and a signature. `accent`
- * tints the header rule so confirmations, changes and cancellations are
- * distinguishable at a glance without needing to be read.
+ * One shell for every message. `accent` tints the rule above the card and the
+ * status line, so a confirmation, a change and a cancellation are told apart
+ * before a word is read — no emoji needed to do that job.
+ *
+ * Dark mode is opt-in per client: the meta tags say the message handles both,
+ * and the media query re-states every colour with !important because inline
+ * styles otherwise win.
  */
 function shell(options: {
   heading: string;
   preheader: string;
   accent: string;
-  emoji: string;
+  status: string;
   body: string;
 }): string {
   return `<!doctype html>
-<html>
-<body style="margin:0;padding:24px 12px;background:${PAPER};font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:${INK};">
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="color-scheme" content="light dark" />
+<meta name="supported-color-schemes" content="light dark" />
+<style>
+  @media (prefers-color-scheme: dark) {
+    .cal-page { background: ${DARK_PAGE} !important; }
+    .cal-card { background: ${DARK_CARD} !important; border-color: ${DARK_LINE} !important; }
+    .cal-ink { color: ${DARK_INK} !important; }
+    .cal-muted { color: ${DARK_MUTED} !important; }
+    .cal-rule { border-color: ${DARK_LINE} !important; }
+    .cal-panel { background: ${DARK_PANEL} !important; color: ${DARK_INK} !important; }
+    .cal-foot { background: ${DARK_PANEL} !important; border-color: ${DARK_LINE} !important; }
+    .cal-btn { background: ${DARK_INK} !important; color: ${DARK_PAGE} !important; }
+    .cal-link { color: ${DARK_INK} !important; }
+  }
+</style>
+</head>
+<body class="cal-page cal-ink" style="margin:0;padding:24px 12px;background:${PAPER};font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:${INK};">
   <span style="display:none!important;opacity:0;color:transparent;height:0;width:0;overflow:hidden;">${esc(
     options.preheader
   )}</span>
-  <div style="max-width:520px;margin:0 auto;background:#ffffff;border:1px solid ${LINE};border-radius:14px;overflow:hidden;">
-    <div style="height:4px;background:${options.accent};"></div>
-    <div style="padding:28px;">
-      <div style="font-size:30px;line-height:1;margin-bottom:12px;">${options.emoji}</div>
-      <h1 style="margin:0 0 6px;font-size:21px;line-height:1.3;letter-spacing:-0.02em;color:${INK};">${esc(
+  <div class="cal-card" style="max-width:520px;margin:0 auto;background:${CARD};border:1px solid ${LINE};border-radius:16px;overflow:hidden;">
+    <div style="height:3px;background:${options.accent};"></div>
+    <div style="padding:28px 28px 8px;">
+      <p style="margin:0 0 10px;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:${
+        options.accent
+      };">${esc(options.status)}</p>
+      <h1 class="cal-ink" style="margin:0;font-size:22px;line-height:1.3;letter-spacing:-0.02em;font-weight:700;color:${INK};">${esc(
         options.heading
       )}</h1>
+    </div>
+    <div style="padding:0 28px 28px;">
       ${options.body}
     </div>
-    <div style="padding:14px 28px;border-top:1px solid ${LINE};background:${PAPER};font-size:12px;color:${MUTED};">
-      Sent by Cal · <a href="${env.webOrigin}" style="color:${MUTED};">${esc(
+    <div class="cal-foot" style="padding:14px 28px;border-top:1px solid ${LINE};background:${PAPER};font-size:12px;">
+      <span class="cal-muted" style="color:${MUTED};">Sent by Cal · </span><a class="cal-link" href="${
+        env.webOrigin
+      }" style="color:${MUTED};text-decoration:none;">${esc(
         env.webOrigin.replace(/^https?:\/\//, "")
       )}</a>
     </div>
@@ -121,16 +161,17 @@ function durationLabel(data: BookingMailData): string {
  * they need to turn up and nothing about how the booking is hosted — no team or
  * organisation name, no event-type mechanics, no host email addresses.
  */
-function detailRows(data: BookingMailData): string {
+function detailRows(data: BookingMailData, options: { omitWhen?: boolean } = {}): string {
   const zone = data.timeZone || DEFAULT_TIME_ZONE;
-  const rows: Array<[string, string]> = [
-    ["Event", esc(data.eventName)],
-    [
+  const rows: Array<[string, string]> = [["Event", esc(data.eventName)]];
+  // A reschedule request has no "when" yet — that is the whole point of it.
+  if (!options.omitWhen) {
+    rows.push([
       "When",
-      `${esc(longDate(data.start, zone))}<br />${esc(timeRange(data))} <span style="color:${MUTED};">(${esc(zone)})</span>`,
-    ],
-    ["Duration", esc(durationLabel(data))],
-  ];
+      `${esc(longDate(data.start, zone))}<br />${esc(timeRange(data))} <span class="cal-muted" style="color:${MUTED};">(${esc(zone)})</span>`,
+    ]);
+  }
+  rows.push(["Duration", esc(durationLabel(data))]);
   if (data.hosts.length > 0) {
     rows.push([data.hosts.length === 1 ? "With" : "Hosts", data.hosts.map((host) => esc(host.name)).join(", ")]);
   }
@@ -138,12 +179,12 @@ function detailRows(data: BookingMailData): string {
   // A reference is what a customer quotes back when they write in about it.
   rows.push(["Reference", `<span style="font-family:ui-monospace,monospace;">${esc(data.uid)}</span>`]);
 
-  return `<table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;margin:18px 0;border-top:1px solid ${LINE};border-bottom:1px solid ${LINE};">
+  return `<table class="cal-rule" role="presentation" cellpadding="0" cellspacing="0" style="width:100%;margin:18px 0;border-top:1px solid ${LINE};border-bottom:1px solid ${LINE};">
     ${rows
       .map(
         ([label, value]) => `<tr>
-      <td style="padding:10px 12px 10px 0;font-size:13px;color:${MUTED};vertical-align:top;width:82px;">${label}</td>
-      <td style="padding:10px 0;font-size:14px;color:${INK};font-weight:500;">${value}</td>
+      <td class="cal-muted" style="padding:10px 12px 10px 0;font-size:13px;color:${MUTED};vertical-align:top;width:88px;">${label}</td>
+      <td class="cal-ink" style="padding:10px 0;font-size:14px;color:${INK};font-weight:500;">${value}</td>
     </tr>`
       )
       .join("")}
@@ -153,24 +194,24 @@ function detailRows(data: BookingMailData): string {
 /** The host's description of the event, when there is one. */
 function descriptionBlock(data: BookingMailData): string {
   if (!data.description) return "";
-  return `<div style="margin:0 0 18px;padding:14px;border-radius:10px;background:${PAPER};font-size:14px;line-height:1.6;color:${INK};">${esc(
+  return `<div class="cal-panel" style="margin:0 0 18px;padding:14px;border-radius:12px;background:${PAPER};font-size:14px;line-height:1.6;color:${INK};">${esc(
     data.description
   )}</div>`;
 }
 
 function button(href: string, label: string): string {
-  return `<a href="${esc(href)}" style="display:inline-block;padding:11px 18px;border-radius:8px;background:${INK};color:#ffffff;font-size:14px;font-weight:600;text-decoration:none;">${esc(
+  return `<a class="cal-btn" href="${esc(href)}" style="display:inline-block;padding:12px 20px;border-radius:10px;background:${INK};color:${CARD};font-size:14px;font-weight:600;text-decoration:none;">${esc(
     label
   )}</a>`;
 }
 
-function textDetails(data: BookingMailData): string {
+function textDetails(data: BookingMailData, options: { omitWhen?: boolean } = {}): string {
   const zone = data.timeZone || DEFAULT_TIME_ZONE;
-  const lines = [
-    `Event:     ${data.eventName}`,
-    `When:      ${longDate(data.start, zone)}, ${timeRange(data)} (${zone})`,
-    `Duration:  ${durationLabel(data)}`,
-  ];
+  const lines = [`Event:     ${data.eventName}`];
+  if (!options.omitWhen) {
+    lines.push(`When:      ${longDate(data.start, zone)}, ${timeRange(data)} (${zone})`);
+  }
+  lines.push(`Duration:  ${durationLabel(data)}`);
   if (data.hosts.length > 0) {
     lines.push(`With:      ${data.hosts.map((host) => host.name).join(", ")}`);
   }
@@ -199,20 +240,20 @@ export function bookingConfirmedMail(data: BookingMailData, pending: boolean): O
     html: shell({
       heading,
       preheader: `${longDate(data.start, data.timeZone || DEFAULT_TIME_ZONE)}, ${timeRange(data)}`,
-      accent: pending ? "#f59e0b" : "#10b981",
-      emoji: pending ? "🌱" : "🎉",
-      body: `<p style="margin:0 0 4px;font-size:14px;line-height:1.6;color:${MUTED};">${opener}</p>
+      accent: pending ? "#b45309" : "#047857",
+      status: pending ? "Awaiting approval" : "Confirmed",
+      body: `<p class="cal-muted" style="margin:0;font-size:15px;line-height:1.6;color:${MUTED};">${opener}</p>
         ${detailRows(data)}
         ${descriptionBlock(data)}
         ${
           data.meetingUrl && !pending
-            ? `<p style="margin:0 0 18px;font-size:14px;">Join here: <a href="${esc(data.meetingUrl)}" style="color:${INK};">${esc(
+            ? `<p class="cal-ink" style="margin:0 0 18px;font-size:14px;">Join here: <a href="${esc(data.meetingUrl)}" class="cal-link" style="color:${INK};">${esc(
                 data.meetingUrl
               )}</a></p>`
             : ""
         }
         ${button(bookingUrl(data.uid), "View, reschedule or cancel")}
-        <p style="margin:18px 0 0;font-size:12px;color:${MUTED};">Use that link if you need to change or cancel this booking.</p>`,
+        <p class="cal-muted" style="margin:18px 0 0;font-size:12px;color:${MUTED};">Use that link if you need to change or cancel this booking.</p>`,
     }),
     text: `${heading}
 
@@ -230,7 +271,7 @@ View, reschedule or cancel: ${bookingUrl(data.uid)}`,
 export function bookingRescheduledMail(data: BookingMailData): Omit<Mail, "to"> {
   const zone = data.timeZone || DEFAULT_TIME_ZONE;
   const was = data.previousStart
-    ? `<p style="margin:0 0 4px;font-size:13px;color:${MUTED};text-decoration:line-through;">${esc(
+    ? `<p class="cal-muted" style="margin:8px 0 0;font-size:13px;color:${MUTED};text-decoration:line-through;">${esc(
         `${longDate(data.previousStart, zone)}, ${clock(data.previousStart, zone)}`
       )}</p>`
     : "";
@@ -240,12 +281,12 @@ export function bookingRescheduledMail(data: BookingMailData): Omit<Mail, "to"> 
     html: shell({
       heading: "Your booking has been moved",
       preheader: `Now ${longDate(data.start, zone)}, ${timeRange(data)}`,
-      accent: "#3b82f6",
-      emoji: "🕰️",
-      body: `<p style="margin:0 0 8px;font-size:14px;line-height:1.6;color:${MUTED};">This booking has moved to a new time. The updated details are below.</p>
+      accent: "#1d4ed8",
+      status: "Time changed",
+      body: `<p class="cal-muted" style="margin:0;font-size:15px;line-height:1.6;color:${MUTED};">This booking has moved to a new time. The updated details are below.</p>
         ${was}
         ${detailRows(data)}
-        ${data.reason ? `<p style="margin:0 0 18px;font-size:14px;color:${MUTED};">Reason: ${esc(data.reason)}</p>` : ""}
+        ${data.reason ? `<p class="cal-muted" style="margin:0 0 18px;font-size:14px;color:${MUTED};">Reason: ${esc(data.reason)}</p>` : ""}
         ${button(bookingUrl(data.uid), "View the new time")}`,
     }),
     text: `Your booking has been moved
@@ -269,11 +310,11 @@ export function bookingCancelledMail(data: BookingMailData, declined: boolean): 
     html: shell({
       heading,
       preheader: `${longDate(data.start, data.timeZone || DEFAULT_TIME_ZONE)} is no longer going ahead`,
-      accent: "#ef4444",
-      emoji: "🍂",
-      body: `<p style="margin:0 0 4px;font-size:14px;line-height:1.6;color:${MUTED};">${opener}</p>
+      accent: "#b91c1c",
+      status: declined ? "Not approved" : "Cancelled",
+      body: `<p class="cal-muted" style="margin:0;font-size:15px;line-height:1.6;color:${MUTED};">${opener}</p>
         ${detailRows(data)}
-        ${data.reason ? `<p style="margin:0 0 18px;font-size:14px;color:${MUTED};">Reason: ${esc(data.reason)}</p>` : ""}
+        ${data.reason ? `<p class="cal-muted" style="margin:0 0 18px;font-size:14px;color:${MUTED};">Reason: ${esc(data.reason)}</p>` : ""}
         ${button(env.webOrigin, "Book another time")}`,
     }),
     text: `${heading}
@@ -283,6 +324,55 @@ ${opener}
 ${textDetails(data)}
 ${data.reason ? `\nReason: ${data.reason}\n` : ""}
 Book another time: ${env.webOrigin}`,
+  };
+}
+
+/**
+ * The host cannot move a booking on someone else's behalf without knowing what
+ * suits them, so a reschedule request asks the person who booked to pick a new
+ * time. The original slot is already released by the time this goes out.
+ */
+export function rescheduleRequestMail(data: BookingMailData): Omit<Mail, "to"> {
+  const zone = data.timeZone || DEFAULT_TIME_ZONE;
+  const original = `${longDate(data.start, zone)}, ${clock(data.start, zone)}`;
+
+  return {
+    subject: `Please pick a new time — ${data.eventName}`,
+    html: shell({
+      heading: "Could you choose another time?",
+      preheader: `${data.eventName} on ${original} needs a new time`,
+      accent: "#b45309",
+      status: "New time needed",
+      body: `<p class="cal-muted" style="margin:0;font-size:15px;line-height:1.6;color:${MUTED};">
+          The host has asked to move this booking. Your original time has been released, so please
+          choose one that works for you.
+        </p>
+        <p class="cal-muted" style="margin:8px 0 0;font-size:13px;color:${MUTED};text-decoration:line-through;">${esc(
+          original
+        )}</p>
+        ${detailRows(data, { omitWhen: true })}
+        ${
+          data.reason
+            ? `<div class="cal-panel" style="margin:0 0 18px;padding:14px;border-radius:12px;background:${PAPER};font-size:14px;line-height:1.6;color:${INK};"><strong>Reason given:</strong> ${esc(
+                data.reason
+              )}</div>`
+            : ""
+        }
+        ${button(`${env.webOrigin}/reschedule/${data.uid}`, "Pick a new time")}
+        <p class="cal-muted" style="margin:18px 0 0;font-size:12px;color:${MUTED};">
+          If none of the times offered suit you, reply to this email and the host will sort it out
+          with you directly.
+        </p>`,
+    }),
+    text: `Could you choose another time?
+
+The host has asked to move this booking. Your original time has been released, so please choose one that works for you.
+
+Original time: ${original}
+
+${textDetails(data, { omitWhen: true })}
+${data.reason ? `\nReason given: ${data.reason}\n` : ""}
+Pick a new time: ${env.webOrigin}/reschedule/${data.uid}`,
   };
 }
 
@@ -305,9 +395,9 @@ export function teamInviteMail(input: {
     html: shell({
       heading: `Welcome to ${input.teamName}`,
       preheader: `${input.inviterName} wants you on the team`,
-      accent: "#8b5cf6",
-      emoji: "🎪",
-      body: `<p style="margin:0 0 18px;font-size:14px;line-height:1.6;color:${MUTED};">
+      accent: "#6d28d9",
+      status: "Invitation",
+      body: `<p class="cal-muted" style="margin:0 0 18px;font-size:15px;line-height:1.6;color:${MUTED};">
           <strong style="color:${INK};">${esc(input.inviterName)}</strong> added you to
           <strong style="color:${INK};">${esc(input.teamName)}</strong>. You can now be booked as a
           host on the team's event types, and their bookings will show up alongside your own.
@@ -315,7 +405,7 @@ export function teamInviteMail(input: {
         ${button(link, action)}
         ${
           input.token
-            ? `<p style="margin:18px 0 0;font-size:12px;color:${MUTED};">If the button doesn't work, use this invite code: <code style="background:${PAPER};padding:2px 5px;border-radius:4px;">${esc(
+            ? `<p class="cal-muted" style="margin:18px 0 0;font-size:12px;color:${MUTED};">If the button doesn't work, use this invite code: <code style="background:${PAPER};padding:2px 5px;border-radius:4px;">${esc(
                 input.token
               )}</code></p>`
             : ""
@@ -336,20 +426,20 @@ export function welcomeMail(input: { name: string; username: string }): Omit<Mai
   const first = input.name.split(" ")[0] || input.name;
 
   return {
-    subject: "Welcome to Cal 👋",
+    subject: "Your Cal booking page is ready",
     html: shell({
       heading: `Hi ${first}, your booking page is live`,
       preheader: "Share your link and let people pick a time",
-      accent: "#10b981",
-      emoji: "🌤️",
-      body: `<p style="margin:0 0 18px;font-size:14px;line-height:1.6;color:${MUTED};">
+      accent: "#047857",
+      status: "Welcome",
+      body: `<p class="cal-muted" style="margin:0 0 18px;font-size:15px;line-height:1.6;color:${MUTED};">
           No more "does Tuesday work?" — send people your link and they'll pick a time that's
           genuinely free.
         </p>
         <div style="margin:0 0 18px;padding:14px;border:1px solid ${LINE};border-radius:10px;background:${PAPER};font-size:15px;font-weight:600;color:${INK};">
           ${esc(link.replace(/^https?:\/\//, ""))}
         </div>
-        <p style="margin:0 0 18px;font-size:14px;line-height:1.6;color:${MUTED};">
+        <p class="cal-muted" style="margin:0 0 18px;font-size:15px;line-height:1.6;color:${MUTED};">
           Worth doing next: set your working hours, connect your calendar so real conflicts are
           respected, and create an event type for the kind of meeting you take most.
         </p>
