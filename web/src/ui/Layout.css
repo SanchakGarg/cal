@@ -23,8 +23,8 @@
 }
 
 .cal-page-header__subtitle {
-  margin-top: 2px;
-  font-size: 13px;
+  margin-top: 4px;
+  font-size: var(--cal-text-sm);
   color: var(--cal-text-subtle);
 }
 
@@ -40,8 +40,9 @@
   gap: 4px;
   padding: 2px 8px;
   border-radius: var(--cal-radius-full);
-  font-size: 12px;
-  font-weight: 500;
+  font-size: var(--cal-text-xs);
+  font-weight: var(--cal-weight-medium);
+  letter-spacing: 0;
   background: var(--cal-bg-muted);
   color: var(--cal-text);
 }
@@ -70,10 +71,14 @@
   border-radius: 50%;
   background: var(--cal-bg-emphasis);
   color: var(--cal-text-emphasis);
-  font-weight: 600;
+  font-family: var(--cal-font-display);
+  font-weight: var(--cal-weight-bold);
+  letter-spacing: var(--cal-tracking-display);
+  line-height: 1;
   overflow: hidden;
   flex: none;
   border: 1px solid var(--cal-border-subtle);
+  user-select: none;
 }
 
 .cal-avatar img {
@@ -82,14 +87,60 @@
   object-fit: cover;
 }
 
+/* Tints for people with no uploaded photo. `avatarTint()` in Layout.tsx maps a
+   stable key onto one of these, so a person keeps their colour across pages. */
+.cal-avatar--tint-1 {
+  background: var(--cal-avatar-1-bg);
+  color: var(--cal-avatar-1-fg);
+}
+.cal-avatar--tint-2 {
+  background: var(--cal-avatar-2-bg);
+  color: var(--cal-avatar-2-fg);
+}
+.cal-avatar--tint-3 {
+  background: var(--cal-avatar-3-bg);
+  color: var(--cal-avatar-3-fg);
+}
+.cal-avatar--tint-4 {
+  background: var(--cal-avatar-4-bg);
+  color: var(--cal-avatar-4-fg);
+}
+.cal-avatar--tint-5 {
+  background: var(--cal-avatar-5-bg);
+  color: var(--cal-avatar-5-fg);
+}
+.cal-avatar--tint-6 {
+  background: var(--cal-avatar-6-bg);
+  color: var(--cal-avatar-6-fg);
+}
+.cal-avatar--tint-7 {
+  background: var(--cal-avatar-7-bg);
+  color: var(--cal-avatar-7-fg);
+}
+.cal-avatar--tint-8 {
+  background: var(--cal-avatar-8-bg);
+  color: var(--cal-avatar-8-fg);
+}
+
+/* The tint already reads as an edge; a border on top of it muddies the colour. */
+.cal-avatar[class*="cal-avatar--tint-"] {
+  border-color: transparent;
+}
+
 .cal-avatar-group {
   display: inline-flex;
   align-items: center;
 }
 
+/* Stacked avatars need a ring so the overlap stays readable. */
+.cal-avatar-group .cal-avatar {
+  box-shadow: 0 0 0 2px var(--cal-bg);
+}
+
 .cal-avatar-group__rest {
-  margin-left: 6px;
-  font-size: 12px;
+  margin-left: 8px;
+  font-size: var(--cal-text-xs);
+  font-weight: var(--cal-weight-medium);
   color: var(--cal-text-subtle);
 }
 
@@ -119,7 +170,7 @@
 
 .cal-empty p {
   max-width: 380px;
-  font-size: 13px;
+  font-size: var(--cal-text-sm);
   color: var(--cal-text-subtle);
 }
 
@@ -173,7 +224,7 @@
   border: 0;
   background: transparent;
   color: var(--cal-text-subtle);
-  font-size: 13px;
+  font-size: var(--cal-text-sm);
   font-weight: 500;
   cursor: pointer;
   border-bottom: 2px solid transparent;
@@ -204,7 +255,7 @@
   padding: 0 6px;
   border-radius: var(--cal-radius-full);
   background: var(--cal-bg-muted);
-  font-size: 11px;
+  font-size: var(--cal-text-2xs);
 }
 
 .cal-segmented {
@@ -225,8 +276,20 @@
   border-radius: var(--cal-radius-sm);
   background: transparent;
   color: var(--cal-text-subtle);
-  font-size: 13px;
+  font-size: var(--cal-text-sm);
+  font-weight: var(--cal-weight-medium);
   cursor: pointer;
+  transition: color var(--cal-duration-fast) ease, background var(--cal-duration-fast) ease;
+}
+
+.cal-segmented button:hover {
+  color: var(--cal-text-emphasis);
+}
+
+.cal-segmented--sm button {
+  height: 24px;
+  padding: 0 8px;
+  font-size: var(--cal-text-xs);
 }
 
 .cal-segmented button.is-active {
@@ -275,7 +338,7 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: 12px;
+  font-size: var(--cal-text-xs);
   color: var(--cal-text-muted);
 }
 
@@ -296,7 +359,7 @@
   height: 20px;
   border-radius: 50%;
   border: 1px solid var(--cal-border);
-  font-size: 11px;
+  font-size: var(--cal-text-2xs);
 }
 
 .cal-stepper li.is-current .cal-stepper__dot,

@@ -43,7 +43,9 @@ export function BookerPage({ username, teamSlug, eventSlug, rescheduleUid }: Boo
   const [eventType, setEventType] = useState<EventType | null>(null);
   const [hostName, setHostName] = useState("");
   const [hostAvatar, setHostAvatar] = useState<string | null>(null);
-  const [members, setMembers] = useState<Array<{ name: string; avatarUrl?: string | null }>>([]);
+  const [members, setMembers] = useState<
+    Array<{ name: string; avatarUrl?: string | null; colorKey?: string }>
+  >([]);
   const [notFound, setNotFound] = useState(false);
 
   const [timeZone, setTimeZone] = useState(browserTimeZone());
@@ -81,7 +83,13 @@ export function BookerPage({ username, teamSlug, eventSlug, rescheduleUid }: Boo
           setEventType(match);
           setHostName(team.profile.name);
           setHostAvatar(team.profile.logoUrl);
-          setMembers(team.members.map((member) => ({ name: member.name, avatarUrl: member.avatarUrl })));
+          setMembers(
+            team.members.map((member) => ({
+              name: member.name,
+              avatarUrl: member.avatarUrl,
+              colorKey: member.username,
+            }))
+          );
         } else if (username) {
           const profile = await api.get<PublicProfile>(`/v2/public/users/${username}`, undefined, {
             auth: false,
@@ -249,12 +257,14 @@ export function BookerPage({ username, teamSlug, eventSlug, rescheduleUid }: Boo
     <div className="cal-booker">
       <div className={`cal-booker__frame cal-card ${showForm ? "is-form" : ""}`}>
         <aside className="cal-booker__meta">
-          {members.length > 0 ? (
-            <AvatarGroup people={members} size={32} />
-          ) : (
-            <Avatar name={hostName} src={hostAvatar} size={38} />
-          )}
-          <p className="cal-booker__host">{hostName}</p>
+          <div className="cal-booker__identity">
+            {members.length > 0 ? (
+              <AvatarGroup people={members} size={32} />
+            ) : (
+              <Avatar name={hostName} src={hostAvatar} size={38} colorKey={teamSlug ?? username} />
+            )}
+            <p className="cal-booker__host">{hostName}</p>
+          </div>
           <h1 className="cal-booker__title">{eventType.title}</h1>
           {eventType.description ? <p className="cal-booker__desc">{eventType.description}</p> : null}
 
@@ -323,9 +333,18 @@ export function BookerPage({ username, teamSlug, eventSlug, rescheduleUid }: Boo
 
         {showForm ? (
           <section className="cal-booker__form">
-            <div className="cal-booker__form-head">
-              <Button variant="minimal" size="sm" startIcon="chevronLeft" onClick={() => setSelectedSlot(null)}>
-                Back
+            <div className="cal-booker__panel-head">
+              <div className="cal-booker__panel-title">
+                <p className="cal-eyebrow">Step 2 of 2</p>
+                <p className="cal-booker__panel-heading">Your details</p>
+              </div>
+              <Button
+                variant="minimal"
+                size="sm"
+                startIcon="chevronLeft"
+                onClick={() => setSelectedSlot(null)}
+              >
+                Change time
               </Button>
             </div>
             <div className="cal-stack">
@@ -380,8 +399,14 @@ export function BookerPage({ username, teamSlug, eventSlug, rescheduleUid }: Boo
         ) : (
           <>
             <section className="cal-booker__calendar">
-              <div className="cal-booker__layout">
+              <div className="cal-booker__panel-head">
+                <div className="cal-booker__panel-title">
+                  <p className="cal-eyebrow">Step 1 of 2</p>
+                  <p className="cal-booker__panel-heading">Pick a time</p>
+                </div>
                 <SegmentedControl
+                  size="sm"
+                  ariaLabel="Calendar layout"
                   value={layout}
                   onChange={(next) => setLayout(next)}
                   options={[
@@ -409,7 +434,7 @@ export function BookerPage({ username, teamSlug, eventSlug, rescheduleUid }: Boo
                     .sort()
                     .map((date) => (
                       <div key={date} className="cal-booker__list-day">
-                        <p className="cal-section-title">{formatDateISO(date, { weekday: "long" })}</p>
+                        <p className="cal-eyebrow">{formatDateISO(date, { weekday: "long" })}</p>
                         <div className="cal-booker__list-slots">
                           {(slots[date] ?? []).map((slot) => (
                             <button
@@ -445,30 +470,30 @@ export function BookerPage({ username, teamSlug, eventSlug, rescheduleUid }: Boo
 
             {layout === "month" ? (
               <section className="cal-booker__slots">
-                <div className="cal-booker__slots-head">
-                  <strong>{selectedDate ? formatDateISO(selectedDate, { weekday: "short" }) : "Pick a date"}</strong>
-                  <div className="cal-booker__format">
-                    <button
-                      type="button"
-                      className={timeFormat === 12 ? "is-active" : ""}
-                      onClick={() => changeTimeFormat(12)}
-                    >
-                      12h
-                    </button>
-                    <button
-                      type="button"
-                      className={timeFormat === 24 ? "is-active" : ""}
-                      onClick={() => changeTimeFormat(24)}
-                    >
-                      24h
-                    </button>
+                <div className="cal-booker__panel-head">
+                  <div className="cal-booker__panel-title">
+                    <p className="cal-eyebrow">
+                      {daySlots.length > 0
+                        ? `${daySlots.length} slot${daySlots.length === 1 ? "" : "s"}`
+                        : "Availability"}
+                    </p>
+                    <p className="cal-booker__panel-heading cal-num">
+                      {selectedDate
+                        ? formatDateISO(selectedDate, { weekday: "short", month: "short" })
+                        : "Pick a date"}
+                    </p>
                   </div>
+                  <SegmentedControl
+                    size="sm"
+                    ariaLabel="Time format"
+                    value={String(timeFormat) as "12" | "24"}
+                    onChange={(next) => changeTimeFormat(next === "24" ? 24 : 12)}
+                    options={[
+                      { value: "12", label: "12h" },
+                      { value: "24", label: "24h" },
+                    ]}
+                  />
                 </div>
-                {daySlots.length > 0 ? (
-                  <p className="cal-hint">
-                    {daySlots.length} slot{daySlots.length === 1 ? "" : "s"} available
-                  </p>
-                ) : null}
                 <TimeSlotColumn
                   slots={daySlots}
                   timeZone={timeZone}

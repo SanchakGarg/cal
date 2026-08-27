@@ -18,7 +18,7 @@
 }
 
 .cal-profile__head h1 {
-  font-size: 24px;
+  font-size: var(--cal-text-4xl);
 }
 
 .cal-profile__events {
@@ -48,7 +48,7 @@
 
 .cal-profile__section {
   margin-top: 10px;
-  font-size: 12px;
+  font-size: var(--cal-text-xs);
   font-weight: 600;
   letter-spacing: 0.02em;
   text-transform: uppercase;
@@ -139,7 +139,7 @@
 .cal-profile__member-all {
   padding: 10px 16px;
   border-top: 1px solid var(--cal-border);
-  font-size: 13px;
+  font-size: var(--cal-text-sm);
   color: var(--cal-text-subtle);
   text-decoration: none;
 }

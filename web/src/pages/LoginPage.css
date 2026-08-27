@@ -3,14 +3,14 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 24px;
+  padding: 32px 16px;
   background: var(--cal-bg-subtle);
 }
 
 .cal-auth__card {
   width: 100%;
   max-width: 400px;
-  padding: 28px;
+  padding: var(--cal-pad-panel-lg);
   display: flex;
   flex-direction: column;
   gap: 18px;
@@ -23,9 +23,10 @@
 }
 
 .cal-auth__logo {
-  font-size: 22px;
-  font-weight: 700;
-  letter-spacing: -0.03em;
+  font-family: var(--cal-font-display);
+  font-size: var(--cal-text-3xl);
+  font-weight: var(--cal-weight-bold);
+  letter-spacing: -0.04em;
   color: var(--cal-text-emphasis);
 }
 
@@ -73,7 +74,7 @@
   align-items: center;
   gap: 10px;
   color: var(--cal-text-muted);
-  font-size: 12px;
+  font-size: var(--cal-text-xs);
 }
 
 .cal-auth__divider::before,
@@ -95,14 +96,14 @@
 }
 
 .cal-auth__disabled {
-  font-size: 13px;
+  font-size: var(--cal-text-sm);
   color: var(--cal-text-subtle);
 }
 
 .cal-auth__disabled code {
   font-family: var(--cal-font-mono);
-  font-size: 12px;
+  font-size: var(--cal-text-xs);
   background: var(--cal-bg-muted);
   padding: 1px 4px;
-  border-radius: 4px;
+  border-radius: var(--cal-radius-xs);
 }

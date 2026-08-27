@@ -34,6 +34,7 @@
   --cal-danger: #dc2626;
   --cal-danger-hover: #b91c1c;
 
+  --cal-radius-xs: 4px;
   --cal-radius-sm: 6px;
   --cal-radius: 8px;
   --cal-radius-lg: 12px;
@@ -44,8 +45,60 @@
   --cal-shadow-drop: 0 4px 12px rgb(0 0 0 / 0.08), 0 1px 3px rgb(0 0 0 / 0.06);
   --cal-shadow-dialog: 0 20px 40px rgb(0 0 0 / 0.16);
 
-  --cal-font: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  /* Two faces: Bricolage Grotesque titles the page, Instrument Sans runs the
+     interface. Times and dates stay on the interface face with tabular figures
+     so every clock reading in the app lines up in the same columns. */
+  --cal-font: "Instrument Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --cal-font-display: "Bricolage Grotesque", "Instrument Sans", -apple-system, BlinkMacSystemFont, sans-serif;
   --cal-font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+
+  /* Type scale. Every font-size in the app resolves to one of these steps. */
+  --cal-text-2xs: 11px;
+  --cal-text-xs: 12px;
+  --cal-text-sm: 13px;
+  --cal-text-base: 14px;
+  --cal-text-md: 15px;
+  --cal-text-lg: 16px;
+  --cal-text-xl: 18px;
+  --cal-text-2xl: 20px;
+  --cal-text-3xl: 24px;
+  --cal-text-4xl: 30px;
+
+  --cal-weight-normal: 400;
+  --cal-weight-medium: 500;
+  --cal-weight-semibold: 600;
+  --cal-weight-bold: 700;
+
+  /* Display type is set tighter than body type; micro-labels are tracked out. */
+  --cal-tracking-display: -0.02em;
+  --cal-tracking-tight: -0.01em;
+  --cal-tracking-wide: 0.06em;
+
+  /* Panel rhythm, shared by every card, rail and dialog body. */
+  --cal-pad-panel: 24px;
+  --cal-pad-panel-sm: 16px;
+  --cal-pad-panel-lg: 28px;
+  --cal-gap-panel: 12px;
+
+
+  /* Fallback avatar tints, picked deterministically from a person's stable key
+     so the same person keeps the same colour on every page. */
+  --cal-avatar-1-bg: #e0e7ff;
+  --cal-avatar-1-fg: #3730a3;
+  --cal-avatar-2-bg: #dbeafe;
+  --cal-avatar-2-fg: #1e40af;
+  --cal-avatar-3-bg: #ccfbf1;
+  --cal-avatar-3-fg: #115e59;
+  --cal-avatar-4-bg: #d1fae5;
+  --cal-avatar-4-fg: #065f46;
+  --cal-avatar-5-bg: #fef3c7;
+  --cal-avatar-5-fg: #92400e;
+  --cal-avatar-6-bg: #ffe4e6;
+  --cal-avatar-6-fg: #9f1239;
+  --cal-avatar-7-bg: #fae8ff;
+  --cal-avatar-7-fg: #86198f;
+  --cal-avatar-8-bg: #ede9fe;
+  --cal-avatar-8-fg: #5b21b6;
 
   --cal-sidebar-width: 256px;
   --cal-header-height: 60px;
@@ -89,4 +142,21 @@
   --cal-shadow: 0 1px 3px rgb(0 0 0 / 0.5);
   --cal-shadow-drop: 0 4px 12px rgb(0 0 0 / 0.55);
   --cal-shadow-dialog: 0 20px 40px rgb(0 0 0 / 0.6);
+
+  --cal-avatar-1-bg: #2a2c5e;
+  --cal-avatar-1-fg: #c7d2fe;
+  --cal-avatar-2-bg: #1e3054;
+  --cal-avatar-2-fg: #bfdbfe;
+  --cal-avatar-3-bg: #10403c;
+  --cal-avatar-3-fg: #99f6e4;
+  --cal-avatar-4-bg: #103a2c;
+  --cal-avatar-4-fg: #a7f3d0;
+  --cal-avatar-5-bg: #3d2c10;
+  --cal-avatar-5-fg: #fde68a;
+  --cal-avatar-6-bg: #45161f;
+  --cal-avatar-6-fg: #fecdd3;
+  --cal-avatar-7-bg: #3d1440;
+  --cal-avatar-7-fg: #f5d0fe;
+  --cal-avatar-8-bg: #2e1f5e;
+  --cal-avatar-8-fg: #ddd6fe;
 }

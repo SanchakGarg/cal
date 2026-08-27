@@ -42,17 +42,17 @@
 .cal-btn--sm {
   height: 30px;
   padding: 0 10px;
-  font-size: 13px;
+  font-size: var(--cal-text-sm);
 }
 .cal-btn--md {
   height: 36px;
   padding: 0 14px;
-  font-size: 14px;
+  font-size: var(--cal-text-base);
 }
 .cal-btn--lg {
   height: 42px;
   padding: 0 18px;
-  font-size: 14px;
+  font-size: var(--cal-text-base);
 }
 
 .cal-btn--icon {

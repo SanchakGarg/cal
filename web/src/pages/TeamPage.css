@@ -28,14 +28,16 @@
 }
 
 .cal-stat__value {
-  font-size: 22px;
-  font-weight: 600;
+  font-family: var(--cal-font-display);
+  font-size: var(--cal-text-3xl);
+  font-weight: var(--cal-weight-bold);
   color: var(--cal-text-emphasis);
-  letter-spacing: -0.02em;
+  letter-spacing: var(--cal-tracking-display);
+  font-variant-numeric: tabular-nums;
 }
 
 .cal-stat__label {
-  font-size: 12px;
+  font-size: var(--cal-text-xs);
   color: var(--cal-text-subtle);
 }
 
@@ -59,7 +61,7 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
-  font-size: 13px;
+  font-size: var(--cal-text-sm);
 }
 
 .cal-team__what {
@@ -89,7 +91,7 @@
 }
 
 .cal-team__load-name {
-  font-size: 13px;
+  font-size: var(--cal-text-sm);
   color: var(--cal-text-emphasis);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -133,7 +135,7 @@
 
 .cal-team__share-url {
   font-family: var(--cal-font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
-  font-size: 13px;
+  font-size: var(--cal-text-sm);
   color: var(--cal-text-subtle);
   background: var(--cal-bg-subtle);
   border: 1px solid var(--cal-border-subtle);

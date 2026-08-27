@@ -111,7 +111,7 @@ export function BookingsPage({ status }: { status: BookingStatus }) {
                     </div>
                     {attendee ? (
                       <div className="cal-row cal-booking__attendee">
-                        <Avatar name={attendee.name} size={20} />
+                        <Avatar name={attendee.name} size={20} colorKey={attendee.email} />
                         <span className="cal-hint">
                           {attendee.name} · {attendee.email}
                         </span>

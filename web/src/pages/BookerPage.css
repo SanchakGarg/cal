@@ -11,46 +11,90 @@
 
 .cal-booker__frame {
   display: grid;
-  grid-template-columns: 300px minmax(0, 1fr) 240px;
+  grid-template-columns: 320px minmax(0, 1fr) 260px;
   width: 100%;
   max-width: 1000px;
-  min-height: 460px;
+  min-height: 520px;
   overflow: hidden;
 }
 
 .cal-booker__frame.is-form {
-  grid-template-columns: 300px minmax(0, 1fr);
-  max-width: 780px;
+  grid-template-columns: 320px minmax(0, 1fr);
+  max-width: 800px;
 }
 
-.cal-booker__meta {
+/* The three columns share one padding and one internal gap, so the panel heads
+   line up across the seam whichever step the booker is on. */
+.cal-booker__meta,
+.cal-booker__calendar,
+.cal-booker__slots,
+.cal-booker__form {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 24px;
+  gap: var(--cal-gap-panel);
+  padding: var(--cal-pad-panel);
+  min-width: 0;
+}
+
+.cal-booker__meta,
+.cal-booker__calendar {
   border-right: 1px solid var(--cal-border-subtle);
 }
 
+/* Each column opens with an eyebrow and a heading at the same height. */
+.cal-booker__panel-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 34px;
+}
+
+.cal-booker__panel-title {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.cal-booker__panel-heading {
+  font-family: var(--cal-font-display);
+  font-size: var(--cal-text-md);
+  font-weight: var(--cal-weight-semibold);
+  letter-spacing: var(--cal-tracking-display);
+  color: var(--cal-text-emphasis);
+}
+
+.cal-booker__identity {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .cal-booker__host {
-  font-size: 13px;
-  font-weight: 500;
+  font-size: var(--cal-text-sm);
+  font-weight: var(--cal-weight-medium);
   color: var(--cal-text-subtle);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .cal-booker__title {
-  font-size: 20px;
+  font-size: var(--cal-text-3xl);
+  line-height: 1.2;
 }
 
 .cal-booker__desc {
-  font-size: 13px;
+  font-size: var(--cal-text-sm);
   color: var(--cal-text-subtle);
 }
 
 .cal-booker__facts {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  margin-top: 6px;
+  gap: 10px;
+  margin-top: 4px;
   padding: 0;
   list-style: none;
 }
@@ -59,22 +103,17 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 13px;
-  font-weight: 500;
+  min-height: 26px;
+  font-size: var(--cal-text-sm);
+  font-weight: var(--cal-weight-medium);
+  font-variant-numeric: tabular-nums;
   color: var(--cal-text-emphasis);
 }
 
-.cal-booker__calendar {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding: 24px;
-  border-right: 1px solid var(--cal-border-subtle);
-}
-
-.cal-booker__layout {
-  display: flex;
-  justify-content: flex-end;
+/* Icons stay in their own column so the labels beside them align. */
+.cal-booker__facts li > svg {
+  flex: none;
+  color: var(--cal-text-subtle);
 }
 
 .cal-booker__next-month {
@@ -84,75 +123,40 @@
   align-items: center;
   gap: 4px;
   border: 0;
+  padding: 0;
   background: transparent;
   color: var(--cal-text-subtle);
-  font-size: 12px;
+  font-size: var(--cal-text-xs);
+  font-weight: var(--cal-weight-medium);
   cursor: pointer;
+}
+
+.cal-booker__next-month:hover {
+  color: var(--cal-text-emphasis);
 }
 
 .cal-booker__slots {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding: 24px 20px;
-  max-height: 520px;
-}
-
-.cal-booker__slots-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  font-size: 13px;
-}
-
-.cal-booker__format {
-  display: inline-flex;
-  padding: 2px;
-  gap: 2px;
-  border-radius: var(--cal-radius-sm);
-  background: var(--cal-bg-muted);
-}
-
-.cal-booker__format button {
-  height: 22px;
-  padding: 0 7px;
-  border: 0;
-  border-radius: 4px;
-  background: transparent;
-  color: var(--cal-text-subtle);
-  font-size: 11px;
-  font-weight: 500;
-  cursor: pointer;
-}
-
-.cal-booker__format button.is-active {
-  background: var(--cal-bg);
-  color: var(--cal-text-emphasis);
-  box-shadow: var(--cal-shadow-sm);
-}
-
-.cal-booker__form {
-  padding: 20px 24px 24px;
-}
-
-.cal-booker__form-head {
-  margin-bottom: 8px;
+  max-height: 560px;
 }
 
 .cal-booker__list {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 16px;
   max-height: 460px;
   overflow-y: auto;
+}
+
+.cal-booker__list-day {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
 .cal-booker__list-slots {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-  margin-top: 6px;
 }
 
 .cal-booker__list-slots .cal-slot {
@@ -160,7 +164,7 @@
 }
 
 .cal-booker__footer {
-  font-size: 12px;
+  font-size: var(--cal-text-xs);
   color: var(--cal-text-muted);
 }
 
@@ -178,11 +182,23 @@
   .cal-booker__frame,
   .cal-booker__frame.is-form {
     grid-template-columns: 1fr;
+    min-height: 0;
   }
 
   .cal-booker__meta,
   .cal-booker__calendar {
     border-right: 0;
     border-bottom: 1px solid var(--cal-border-subtle);
+  }
+
+  .cal-booker__meta,
+  .cal-booker__calendar,
+  .cal-booker__slots,
+  .cal-booker__form {
+    padding: var(--cal-pad-panel-sm);
+  }
+
+  .cal-booker__slots {
+    max-height: none;
   }
 }

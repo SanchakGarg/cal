@@ -16,13 +16,13 @@
 .cal-select--md {
   height: 36px;
   padding: 0 10px;
-  font-size: 14px;
+  font-size: var(--cal-text-base);
 }
 
 .cal-select--sm {
   height: 30px;
   padding: 0 8px;
-  font-size: 13px;
+  font-size: var(--cal-text-sm);
 }
 
 .cal-select:hover:not(:disabled) {
@@ -62,7 +62,7 @@
   border-radius: var(--cal-radius-sm);
   background: var(--cal-bg);
   color: var(--cal-text-emphasis);
-  font-size: 13px;
+  font-size: var(--cal-text-sm);
 }
 
 .cal-select__search:focus {
@@ -87,7 +87,7 @@
   border-radius: var(--cal-radius-sm);
   background: transparent;
   color: var(--cal-text-emphasis);
-  font-size: 13px;
+  font-size: var(--cal-text-sm);
   text-align: left;
   cursor: pointer;
 }
@@ -106,12 +106,12 @@
 }
 
 .cal-select__option-hint {
-  font-size: 12px;
+  font-size: var(--cal-text-xs);
   color: var(--cal-text-subtle);
 }
 
 .cal-select__empty {
   padding: 10px;
-  font-size: 13px;
+  font-size: var(--cal-text-sm);
   color: var(--cal-text-subtle);
 }

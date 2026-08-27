@@ -24,9 +24,10 @@
 }
 
 .cal-sidebar__logo {
-  font-size: 20px;
-  font-weight: 700;
-  letter-spacing: -0.03em;
+  font-family: var(--cal-font-display);
+  font-size: var(--cal-text-2xl);
+  font-weight: var(--cal-weight-bold);
+  letter-spacing: -0.04em;
   color: var(--cal-text-emphasis);
 }
 
@@ -56,7 +57,7 @@
   padding: 8px 10px;
   border-radius: var(--cal-radius-sm);
   color: var(--cal-text);
-  font-size: 14px;
+  font-size: var(--cal-text-base);
   font-weight: 500;
 }
 
@@ -101,7 +102,7 @@
 }
 
 .cal-sidebar__user-name {
-  font-size: 13px;
+  font-size: var(--cal-text-sm);
   font-weight: 500;
   color: var(--cal-text-emphasis);
   overflow: hidden;
@@ -110,7 +111,7 @@
 }
 
 .cal-sidebar__user-handle {
-  font-size: 12px;
+  font-size: var(--cal-text-xs);
   color: var(--cal-text-subtle);
 }
 
@@ -140,7 +141,10 @@
 }
 
 .cal-topbar__brand {
-  font-weight: 700;
+  font-family: var(--cal-font-display);
+  font-size: var(--cal-text-lg);
+  font-weight: var(--cal-weight-bold);
+  letter-spacing: -0.04em;
   color: var(--cal-text-emphasis);
 }
 

@@ -24,7 +24,7 @@
   border-radius: var(--cal-radius-sm);
   background: var(--cal-bg);
   color: var(--cal-text-subtle);
-  font-size: 13px;
+  font-size: var(--cal-text-sm);
   cursor: pointer;
   transition: background var(--cal-duration-fast) ease, color var(--cal-duration-fast) ease,
     border-color var(--cal-duration-fast) ease, transform var(--cal-duration-fast) var(--cal-ease);

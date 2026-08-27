@@ -227,7 +227,13 @@ function TeamDashboard({
                       {booking.status === "pending" ? <Badge tone="attention">Unconfirmed</Badge> : null}
                     </div>
                     <div className="cal-row">
-                      <AvatarGroup people={booking.hosts.map((host) => ({ name: host.name }))} size={20} />
+                      <AvatarGroup
+                        people={booking.hosts.map((host) => ({
+                          name: host.name,
+                          colorKey: host.username,
+                        }))}
+                        size={20}
+                      />
                       <span className="cal-hint">
                         {booking.hosts.map((host) => host.name).join(", ") || "Unassigned"}
                         {attendee ? ` · with ${attendee.name} (${attendee.email})` : ""}
@@ -458,6 +464,7 @@ function TeamEventTypes({
                         people={eventType.hosts.map((host) => ({
                           name: host.name,
                           avatarUrl: host.avatarUrl,
+                          colorKey: host.username,
                         }))}
                         size={20}
                       />
@@ -583,7 +590,12 @@ function TeamMembers({
       <List>
         {members.map((membership) => (
           <ListRow key={membership.id}>
-            <Avatar name={membership.user?.name ?? "?"} src={membership.user?.avatarUrl} size={32} />
+            <Avatar
+              name={membership.user?.name ?? "?"}
+              src={membership.user?.avatarUrl}
+              size={32}
+              colorKey={membership.user?.username ?? membership.user?.email}
+            />
             <div className="cal-team__what">
               <div className="cal-row">
                 <strong>{membership.user?.name ?? `User ${membership.userId}`}</strong>
@@ -696,7 +708,11 @@ function TeamAvailability({ teamId, members }: { teamId: number; members: Member
           const member = members.find((membership) => membership.userId === schedule.ownerId);
           return (
             <ListRow key={`${schedule.ownerId}-${schedule.id}`}>
-              <Avatar name={member?.user?.name ?? schedule.ownerUsername ?? "?"} size={28} />
+              <Avatar
+                name={member?.user?.name ?? schedule.ownerUsername ?? "?"}
+                size={28}
+                colorKey={schedule.ownerUsername ?? member?.user?.username}
+              />
               <div className="cal-team__what">
                 <strong>{member?.user?.name ?? schedule.ownerUsername}</strong>
                 <p className="cal-hint">

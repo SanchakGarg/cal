@@ -19,7 +19,7 @@ body,
 
 body {
   font-family: var(--cal-font);
-  font-size: 14px;
+  font-size: var(--cal-text-base);
   line-height: 1.5;
   color: var(--cal-text);
   background: var(--cal-bg);
@@ -30,19 +30,27 @@ h1,
 h2,
 h3,
 h4 {
+  font-family: var(--cal-font-display);
   color: var(--cal-text-emphasis);
-  font-weight: 600;
-  letter-spacing: -0.01em;
+  font-weight: var(--cal-weight-semibold);
+  letter-spacing: var(--cal-tracking-display);
+  line-height: 1.25;
 }
 
 h1 {
-  font-size: 20px;
+  font-size: var(--cal-text-2xl);
+  font-weight: var(--cal-weight-bold);
 }
 h2 {
-  font-size: 16px;
+  font-size: var(--cal-text-lg);
 }
 h3 {
-  font-size: 15px;
+  font-size: var(--cal-text-base);
+  letter-spacing: var(--cal-tracking-tight);
+}
+h4 {
+  font-size: var(--cal-text-sm);
+  letter-spacing: var(--cal-tracking-tight);
 }
 
 a {
@@ -101,13 +109,38 @@ textarea {
 }
 
 .cal-section-title {
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--cal-text-sm);
+  font-weight: var(--cal-weight-semibold);
+  letter-spacing: var(--cal-tracking-tight);
   color: var(--cal-text-emphasis);
 }
 
+/* Micro-label above a title or beside data: small, tracked out, upper case.
+   The one structural device used app-wide to name what a block contains. */
+.cal-eyebrow {
+  font-size: var(--cal-text-2xs);
+  font-weight: var(--cal-weight-semibold);
+  letter-spacing: var(--cal-tracking-wide);
+  text-transform: uppercase;
+  color: var(--cal-text-subtle);
+}
+
+/* Clock readings, dates and counts. Tabular figures keep the numbers in a
+   scheduling app aligned column to column, slot to slot. */
+.cal-num,
+.cal-slot,
+.cal-calendar__day,
+.cal-calendar__hourlabel,
+.cal-booking__when,
+.cal-event__time,
+.cal-chip__time,
+time {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
 .cal-hint {
-  font-size: 12px;
+  font-size: var(--cal-text-xs);
   color: var(--cal-text-subtle);
 }
 
@@ -130,7 +163,7 @@ textarea {
   border-radius: var(--cal-radius-lg);
   background: var(--cal-bg);
   box-shadow: var(--cal-shadow-drop);
-  font-size: 13px;
+  font-size: var(--cal-text-sm);
   color: var(--cal-text-emphasis);
   animation: cal-slide-up var(--cal-duration) var(--cal-ease-out) both;
 }

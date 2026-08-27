@@ -36,7 +36,7 @@
   height: 16px;
   padding: 0;
   border: 1px solid var(--cal-border-subtle);
-  border-radius: 4px;
+  border-radius: var(--cal-radius-xs);
   background: var(--cal-bg-subtle);
   color: var(--cal-text-subtle);
   cursor: pointer;

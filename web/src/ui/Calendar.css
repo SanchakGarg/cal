@@ -12,7 +12,8 @@
 }
 
 .cal-calendar__head h2 {
-  font-size: 15px;
+  font-size: var(--cal-text-md);
+  font-variant-numeric: tabular-nums;
 }
 
 .cal-calendar__nav {
@@ -53,10 +54,10 @@
 .cal-calendar__weekdays span {
   padding: 4px 0;
   text-align: center;
-  font-size: 11px;
-  font-weight: 500;
+  font-size: var(--cal-text-2xs);
+  font-weight: var(--cal-weight-semibold);
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: var(--cal-tracking-wide);
   color: var(--cal-text-muted);
 }
 
@@ -74,7 +75,7 @@
   border-radius: var(--cal-radius-sm);
   background: var(--cal-bg-subtle);
   color: var(--cal-text-muted);
-  font-size: 13px;
+  font-size: var(--cal-text-sm);
   font-weight: 500;
   cursor: not-allowed;
 }

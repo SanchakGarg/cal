@@ -20,7 +20,7 @@
   background: var(--cal-bg);
   color: var(--cal-text-emphasis);
   box-shadow: var(--cal-shadow-drop);
-  font-size: 13px;
+  font-size: var(--cal-text-sm);
   pointer-events: auto;
   animation: cal-slide-in-right var(--cal-duration) var(--cal-ease-out) both;
 }
@@ -57,7 +57,7 @@
 }
 
 .cal-toast__description {
-  font-size: 12px;
+  font-size: var(--cal-text-xs);
   color: var(--cal-text-subtle);
   overflow-wrap: anywhere;
 }
@@ -71,7 +71,7 @@
   border-radius: var(--cal-radius-sm);
   background: var(--cal-bg);
   color: var(--cal-text-emphasis);
-  font-size: 12px;
+  font-size: var(--cal-text-xs);
   font-weight: 500;
   cursor: pointer;
 }

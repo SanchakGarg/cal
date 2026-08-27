@@ -40,11 +40,11 @@
   border-radius: var(--cal-radius);
   background: var(--cal-bg-subtle);
   border: 1px solid var(--cal-border-subtle);
-  font-size: 13px;
+  font-size: var(--cal-text-sm);
 }
 
 .cal-form-page__summary dt {
-  font-size: 11px;
+  font-size: var(--cal-text-2xs);
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--cal-text-muted);

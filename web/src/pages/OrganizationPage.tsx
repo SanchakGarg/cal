@@ -165,7 +165,7 @@ export function OrganizationPage({ tab }: { tab: OrgTab }) {
             <List>
               {users.map((user) => (
                 <ListRow key={user.id}>
-                  <Avatar name={user.name || user.email} size={32} />
+                  <Avatar name={user.name || user.email} size={32} colorKey={user.email} />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div className="cal-row">
                       <strong>{user.name || user.email}</strong>
@@ -207,7 +207,7 @@ export function OrganizationPage({ tab }: { tab: OrgTab }) {
               const count = memberships.filter((membership) => membership.teamId === team.id).length;
               return (
                 <ListRow key={team.id} onClick={() => navigate(`/teams/${team.id}/dashboard`)}>
-                  <Avatar name={team.name} src={team.logoUrl} size={30} />
+                  <Avatar name={team.name} src={team.logoUrl} size={30} colorKey={team.slug ?? team.name} />
                   <div style={{ flex: 1 }}>
                     <strong>{team.name}</strong>
                     <p className="cal-hint">/team/{team.slug}</p>

@@ -98,7 +98,11 @@ export function BookingCancelPage({ uid }: { uid: string }) {
               <dt>Who</dt>
               <dd>
                 <span className="cal-row">
-                  <Avatar name={booking.attendees[0].name} size={20} />
+                  <Avatar
+                    name={booking.attendees[0].name}
+                    size={20}
+                    colorKey={booking.attendees[0].email}
+                  />
                   {booking.attendees[0].name} · {booking.attendees[0].email}
                 </span>
               </dd>

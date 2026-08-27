@@ -51,11 +51,15 @@ export function ProfilePage({ username, teamSlug }: { username?: string; teamSlu
       <div className="cal-profile__head">
         {team && team.members.length > 0 ? (
           <AvatarGroup
-            people={team.members.map((member) => ({ name: member.name, avatarUrl: member.avatarUrl }))}
+            people={team.members.map((member) => ({
+              name: member.name,
+              avatarUrl: member.avatarUrl,
+              colorKey: member.username,
+            }))}
             size={40}
           />
         ) : (
-          <Avatar name={name} src={avatar} size={64} />
+          <Avatar name={name} src={avatar} size={64} colorKey={handle} />
         )}
         <h1>{name}</h1>
         {bio ? <p className="cal-muted">{bio}</p> : null}
@@ -126,7 +130,7 @@ function MemberCard({ member }: { member: PublicTeamProfile["members"][number] }
         aria-expanded={open}
         onClick={() => setOpen((current) => !current)}
       >
-        <Avatar name={member.name} src={member.avatarUrl} size={36} />
+        <Avatar name={member.name} src={member.avatarUrl} size={36} colorKey={member.username} />
         <span className="cal-profile__member-name">
           <strong>{member.name}</strong>
           <span className="cal-hint">

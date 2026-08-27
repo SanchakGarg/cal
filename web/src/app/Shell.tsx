@@ -100,7 +100,12 @@ export function Shell({ children, wide = false }: { children: ReactNode; wide?: 
                 className="cal-sidebar__user"
                 onClick={toggle}
               >
-                <Avatar name={me?.name ?? "Guest"} src={me?.avatarUrl} size={28} />
+                <Avatar
+                  name={me?.name ?? "Guest"}
+                  src={me?.avatarUrl}
+                  size={28}
+                  colorKey={me?.username ?? me?.email}
+                />
                 <span className="cal-sidebar__user-text">
                   <span className="cal-sidebar__user-name">{me?.name ?? "Guest"}</span>
                   <span className="cal-sidebar__user-handle">/{me?.username ?? ""}</span>

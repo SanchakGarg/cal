@@ -47,13 +47,13 @@
 }
 
 .cal-event-editor__tab-label {
-  font-size: 13px;
+  font-size: var(--cal-text-sm);
   font-weight: 500;
   color: var(--cal-text-emphasis);
 }
 
 .cal-event-editor__tab-hint {
-  font-size: 11px;
+  font-size: var(--cal-text-2xs);
   color: var(--cal-text-subtle);
 }
 
@@ -83,7 +83,7 @@
 .cal-schedule-preview__row {
   display: flex;
   justify-content: space-between;
-  font-size: 13px;
+  font-size: var(--cal-text-sm);
 }
 
 .cal-private-link {
@@ -98,7 +98,7 @@
 
 .cal-private-link code {
   font-family: var(--cal-font-mono);
-  font-size: 12px;
+  font-size: var(--cal-text-xs);
   color: var(--cal-text-subtle);
   overflow: hidden;
   text-overflow: ellipsis;

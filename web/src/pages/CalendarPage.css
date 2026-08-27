@@ -15,7 +15,7 @@
 
 .cal-calendar__heading {
   margin: 0 0 0 6px;
-  font-size: 16px;
+  font-size: var(--cal-text-lg);
   font-weight: 600;
   color: var(--cal-text-emphasis);
   white-space: nowrap;
@@ -58,14 +58,14 @@
 }
 
 .cal-calendar__dayname {
-  font-size: 11px;
+  font-size: var(--cal-text-2xs);
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--cal-text-subtle);
 }
 
 .cal-calendar__daynum {
-  font-size: 15px;
+  font-size: var(--cal-text-md);
   font-weight: 600;
   color: var(--cal-text-emphasis);
 }
@@ -78,7 +78,7 @@
   border-radius: var(--cal-radius-full);
   background: var(--cal-brand);
   color: var(--cal-brand-text);
-  font-size: 13px;
+  font-size: var(--cal-text-sm);
 }
 
 .cal-calendar__scroll {
@@ -99,7 +99,7 @@
   position: relative;
   padding-right: 8px;
   text-align: right;
-  font-size: 11px;
+  font-size: var(--cal-text-2xs);
   color: var(--cal-text-muted);
   transform: translateY(-6px);
 }
@@ -148,7 +148,7 @@
   background: hsl(var(--cal-event-hue) 70% 95%);
   color: hsl(var(--cal-event-hue) 45% 22%);
   text-align: left;
-  font-size: 11px;
+  font-size: var(--cal-text-2xs);
   line-height: 1.25;
   cursor: pointer;
   z-index: 1;
@@ -211,7 +211,7 @@
   height: 22px;
   padding: 0 6px;
   border-radius: var(--cal-radius-full);
-  font-size: 12px;
+  font-size: var(--cal-text-xs);
   font-weight: 600;
   color: var(--cal-text);
   background: transparent;
@@ -240,8 +240,8 @@
   gap: 5px;
   min-width: 0;
   padding: 2px 5px;
-  border-radius: 4px;
-  font-size: 11px;
+  border-radius: var(--cal-radius-xs);
+  font-size: var(--cal-text-2xs);
   color: var(--cal-text);
   background: transparent;
   cursor: pointer;
@@ -280,7 +280,7 @@
 .cal-calendar__more {
   align-self: flex-start;
   padding: 1px 5px;
-  font-size: 11px;
+  font-size: var(--cal-text-2xs);
   color: var(--cal-text-subtle);
   background: transparent;
   cursor: pointer;

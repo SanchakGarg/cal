@@ -59,7 +59,7 @@ export function TeamsPage() {
           <List>
             {orgs.map((org) => (
               <ListRow key={org.id} onClick={() => navigate("/settings/organization/members")}>
-                <Avatar name={org.name} src={org.logoUrl} size={30} />
+                <Avatar name={org.name} src={org.logoUrl} size={30} colorKey={org.slug ?? org.name} />
                 <div style={{ flex: 1 }}>
                   <strong>{org.name}</strong>
                   <p className="cal-hint">/{org.slug}</p>
@@ -88,7 +88,7 @@ export function TeamsPage() {
         <List>
           {teams.map((team) => (
             <ListRow key={team.id} onClick={() => navigate(`/teams/${team.id}/dashboard`)}>
-              <Avatar name={team.name} src={team.logoUrl} size={30} />
+              <Avatar name={team.name} src={team.logoUrl} size={30} colorKey={team.slug ?? team.name} />
               <div style={{ flex: 1 }}>
                 <strong>{team.name}</strong>
                 <p className="cal-hint">/team/{team.slug}</p>

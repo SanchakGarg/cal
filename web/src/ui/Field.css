@@ -5,7 +5,7 @@
 }
 
 .cal-field__label {
-  font-size: 13px;
+  font-size: var(--cal-text-sm);
   font-weight: 500;
   color: var(--cal-text-emphasis);
 }
@@ -16,12 +16,12 @@
 }
 
 .cal-field__hint {
-  font-size: 12px;
+  font-size: var(--cal-text-xs);
   color: var(--cal-text-subtle);
 }
 
 .cal-field__error {
-  font-size: 12px;
+  font-size: var(--cal-text-xs);
   color: var(--cal-text-error);
 }
 
@@ -51,7 +51,7 @@
   padding: 0 10px;
   background: var(--cal-bg-subtle);
   color: var(--cal-text-subtle);
-  font-size: 13px;
+  font-size: var(--cal-text-sm);
   white-space: nowrap;
 }
 
@@ -71,7 +71,7 @@
   border: 0;
   background: transparent;
   color: var(--cal-text-emphasis);
-  font-size: 14px;
+  font-size: var(--cal-text-base);
 }
 
 .cal-input:focus {
@@ -111,7 +111,7 @@
 }
 
 .cal-checkbox label {
-  font-size: 14px;
+  font-size: var(--cal-text-base);
   color: var(--cal-text-emphasis);
 }
 
@@ -148,7 +148,7 @@
 }
 
 .cal-radio__label {
-  font-size: 14px;
+  font-size: var(--cal-text-base);
   color: var(--cal-text-emphasis);
   font-weight: 500;
 }

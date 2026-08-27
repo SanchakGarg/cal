@@ -43,24 +43,66 @@ export function Badge({
   );
 }
 
-export function Avatar({
-  name,
-  src,
-  size = 32,
-}: {
-  name: string;
-  src?: string | null;
-  size?: number;
-}) {
+/** How many `--cal-avatar-N-*` tint pairs `tokens.css` defines. */
+const AVATAR_TINTS = 8;
+
+/**
+ * Picks one of the avatar tints from a key. Same key always lands on the same
+ * tint, in either theme, on every page — so a person without a photo still has
+ * a recognisable colour. Pass the most stable key available (username, email or
+ * id); the display name is only a fallback, because renaming would recolour.
+ */
+export function avatarTint(key: string): number {
+  let hash = 0;
+  for (let index = 0; index < key.length; index += 1) {
+    // djb2-style: cheap, and spreads short keys like usernames well.
+    hash = (hash * 33 + key.charCodeAt(index)) % 0xffffffff;
+  }
+  return (hash % AVATAR_TINTS) + 1;
+}
+
+/** First letter of the first two words — "Ada Lovelace" reads as "AL". */
+export function initialsOf(name: string): string {
   const initials = name
-    .split(" ")
+    .split(/[\s@._-]+/)
     .filter(Boolean)
     .slice(0, 2)
     .map((part) => part[0]?.toUpperCase())
     .join("");
+  return initials || "?";
+}
+
+export function Avatar({
+  name,
+  src,
+  size = 32,
+  colorKey,
+}: {
+  name: string;
+  src?: string | null;
+  size?: number;
+  /** Stable identifier for the tint. Defaults to `name`. */
+  colorKey?: string;
+}) {
+  if (src) {
+    return (
+      <span className="cal-avatar" style={{ width: size, height: size }}>
+        <img src={src} alt={name} />
+      </span>
+    );
+  }
+  // Two letters crowd the small avatars used inside list rows, so those show
+  // one; the tint carries the rest of the recognition.
+  const initials = initialsOf(name);
+  const letters = size < 24 ? initials.slice(0, 1) : initials;
   return (
-    <span className="cal-avatar" style={{ width: size, height: size, fontSize: size / 2.6 }}>
-      {src ? <img src={src} alt={name} /> : <span>{initials || "?"}</span>}
+    <span
+      className={`cal-avatar cal-avatar--tint-${avatarTint(colorKey || name)}`}
+      style={{ width: size, height: size, fontSize: Math.max(10, Math.round(size / 2.4)) }}
+      aria-hidden="true"
+      title={name}
+    >
+      <span>{letters}</span>
     </span>
   );
 }
@@ -70,7 +112,7 @@ export function AvatarGroup({
   size = 26,
   max = 4,
 }: {
-  people: Array<{ name: string; avatarUrl?: string | null }>;
+  people: Array<{ name: string; avatarUrl?: string | null; colorKey?: string }>;
   size?: number;
   max?: number;
 }) {
@@ -80,7 +122,12 @@ export function AvatarGroup({
     <span className="cal-avatar-group">
       {shown.map((person, index) => (
         <span key={`${person.name}-${index}`} style={{ marginLeft: index === 0 ? 0 : -size / 3 }}>
-          <Avatar name={person.name} src={person.avatarUrl} size={size} />
+          <Avatar
+            name={person.name}
+            src={person.avatarUrl}
+            size={size}
+            colorKey={person.colorKey}
+          />
         </span>
       ))}
       {rest > 0 ? <span className="cal-avatar-group__rest">+{rest}</span> : null}
@@ -202,13 +249,17 @@ export function SegmentedControl<T extends string>({
   options,
   value,
   onChange,
+  size = "md",
+  ariaLabel,
 }: {
   options: Array<{ value: T; label: string; icon?: IconName }>;
   value: T;
   onChange: (value: T) => void;
+  size?: "sm" | "md";
+  ariaLabel?: string;
 }) {
   return (
-    <div className="cal-segmented">
+    <div className={`cal-segmented cal-segmented--${size}`} role="group" aria-label={ariaLabel}>
       {options.map((option) => (
         <button
           key={option.value}
