@@ -118,6 +118,14 @@ export const env = {
     from: str("MAIL_FROM", "Cal <no-reply@localhost>"),
   },
 
+  // Uploaded avatars and logos are written to disk and served from
+  // `publicPath`. Keep the directory on a volume that survives a redeploy.
+  uploads: {
+    dir: str("UPLOAD_DIR", "var/uploads"),
+    publicPath: str("UPLOAD_PUBLIC_PATH", "/uploads"),
+    maxBytes: num("UPLOAD_MAX_BYTES", 2 * 1024 * 1024),
+  },
+
   // Returns the verification code in the API response so the flow can be
   // exercised without a mail server — it defeats email verification, so it must
   // stay off anywhere real.

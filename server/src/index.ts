@@ -1,4 +1,4 @@
-import { existsSync } from "node:fs";
+import { existsSync, mkdirSync } from "node:fs";
 import { dirname, isAbsolute, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import express from "express";
@@ -11,6 +11,8 @@ import { eventTypesRouter } from "./modules/event-types/routes.ts";
 import { meRouter } from "./modules/me/routes.ts";
 import { organizationsRouter } from "./modules/organizations/routes.ts";
 import { publicRouter } from "./modules/public/routes.ts";
+import { uploadsRouter } from "./modules/uploads/routes.ts";
+import { uploadsDir } from "./lib/uploads.ts";
 import { schedulesRouter } from "./modules/schedules/routes.ts";
 import { slotsRouter } from "./modules/slots/routes.ts";
 import { teamsRouter } from "./modules/teams/routes.ts";
@@ -25,6 +27,10 @@ export function createApp(): express.Express {
   // that simply sets `x-forwarded-for` itself.
   app.set("trust proxy", 1);
 
+  // A base64 image is a third larger than the file it encodes, so the upload
+  // route gets its own parser. It is mounted first; body-parser marks the body
+  // as read, so the global parser below skips it.
+  app.use("/v2/uploads/image", express.json({ limit: `${env.uploads.maxBytes * 2}b` }));
   app.use(express.json({ limit: "1mb" }));
   app.use(express.urlencoded({ extended: false, limit: "1mb" }));
 
@@ -74,6 +80,16 @@ export function createApp(): express.Express {
   app.use("/v2/organizations", organizationsRouter);
   app.use("/v2/webhooks", webhooksRouter);
   app.use("/v2/public", publicRouter);
+  app.use("/v2/uploads", uploadsRouter);
+
+  // Uploaded images. Content-addressed names never change, so they can be
+  // cached hard; nosniff is already set for every response above.
+  const uploads = uploadsDir();
+  mkdirSync(uploads, { recursive: true });
+  app.use(
+    env.uploads.publicPath,
+    express.static(uploads, { index: false, maxAge: "30d", immutable: true, fallthrough: false })
+  );
 
   // Optionally serve the built web app from the same process (SERVE_WEB=true).
   if (env.serveWeb) {

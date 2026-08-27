@@ -4,6 +4,7 @@ import { RadioGroup, TextArea, TextField } from "../ui/Field.tsx";
 import { Badge, List, ListRow, PageHeader, SettingsSection, Tabs } from "../ui/Layout.tsx";
 import { Select } from "../ui/Select.tsx";
 import { TimezoneSelect } from "../ui/TimePickers.tsx";
+import { ImageUpload } from "../ui/ImageUpload.tsx";
 import { useToast } from "../ui/Toast.tsx";
 import { api, errorMessage } from "../lib/api.ts";
 import type { Me, OooEntry } from "../lib/types.ts";
@@ -44,6 +45,7 @@ function ProfileSettings() {
   const [username, setUsername] = useState(me?.username ?? "");
   const [email, setEmail] = useState(me?.email ?? "");
   const [bio, setBio] = useState(me?.bio ?? "");
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(me?.avatarUrl ?? null);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -52,12 +54,15 @@ function ProfileSettings() {
     setUsername(me.username);
     setEmail(me.email);
     setBio(me.bio ?? "");
+    setAvatarUrl(me.avatarUrl ?? null);
   }, [me]);
 
   const save = async (): Promise<void> => {
     setSaving(true);
     try {
-      setMe(await api.patch<Me>("/v2/me", { name, username, email, bio }));
+      // Sent as an empty string rather than omitted, so removing the picture
+      // actually clears it instead of leaving the old one in place.
+      setMe(await api.patch<Me>("/v2/me", { name, username, email, bio, avatarUrl: avatarUrl ?? "" }));
       toast.success("Profile updated");
     } catch (error) {
       toast.error(errorMessage(error));
@@ -76,6 +81,14 @@ function ProfileSettings() {
         </Button>
       }
     >
+      <ImageUpload
+        value={avatarUrl}
+        onChange={setAvatarUrl}
+        name={name || me?.email || "You"}
+        colorKey={me?.username ?? me?.email}
+        label="Profile picture"
+        hint="Replaces the one from your sign-in provider. PNG, JPEG, GIF or WebP, up to 2MB."
+      />
       <TextField label="Full name" value={name} onChange={(event) => setName(event.target.value)} />
       <TextField
         label="Username"

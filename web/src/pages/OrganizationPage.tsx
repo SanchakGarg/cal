@@ -1,18 +1,10 @@
 import { useEffect, useState } from "react";
 import { Button, IconButton } from "../ui/Button.tsx";
 import { Dialog } from "../ui/Dialog.tsx";
-import { TextArea, TextField } from "../ui/Field.tsx";
-import {
-  Avatar,
-  Badge,
-  List,
-  ListRow,
-  PageHeader,
-  SettingsSection,
-  Skeleton,
-  Tabs,
-} from "../ui/Layout.tsx";
+import { TextField } from "../ui/Field.tsx";
+import { Avatar, Badge, List, ListRow, PageHeader, Skeleton, Tabs } from "../ui/Layout.tsx";
 import { Select } from "../ui/Select.tsx";
+import { TeamProfileSettings } from "../ui/TeamProfileSettings.tsx";
 import { useToast } from "../ui/Toast.tsx";
 import { api, errorMessage } from "../lib/api.ts";
 import type { Membership, Schedule, Team } from "../lib/types.ts";
@@ -175,7 +167,11 @@ export function OrganizationPage({ tab }: { tab: OrgTab }) {
           org === null ? (
             <Skeleton height={320} />
           ) : (
-            <OrgProfileSettings org={org} onSaved={load} />
+            <TeamProfileSettings
+              team={org}
+              endpoint={`/v2/organizations/${org.id}`}
+              onSaved={load}
+            />
           )
         ) : null}
         {tab === "members" ? (
@@ -301,125 +297,3 @@ export function OrganizationPage({ tab }: { tab: OrgTab }) {
   );
 }
 
-/**
- * The organisation's public identity. Everything here is what a visitor sees on
- * its booking page, so it is edited in one place and previewed as it will read.
- */
-function OrgProfileSettings({ org, onSaved }: { org: Team; onSaved: () => Promise<void> }) {
-  const toast = useToast();
-  const [draft, setDraft] = useState({
-    name: org.name,
-    bio: org.bio ?? "",
-    logoUrl: org.logoUrl ?? "",
-    websiteUrl: org.websiteUrl ?? "",
-    contactEmail: org.contactEmail ?? "",
-    contactPhone: org.contactPhone ?? "",
-    location: org.location ?? "",
-  });
-  const [saving, setSaving] = useState(false);
-
-  const set = (patch: Partial<typeof draft>): void => setDraft((current) => ({ ...current, ...patch }));
-
-  const dirty =
-    draft.name !== org.name ||
-    draft.bio !== (org.bio ?? "") ||
-    draft.logoUrl !== (org.logoUrl ?? "") ||
-    draft.websiteUrl !== (org.websiteUrl ?? "") ||
-    draft.contactEmail !== (org.contactEmail ?? "") ||
-    draft.contactPhone !== (org.contactPhone ?? "") ||
-    draft.location !== (org.location ?? "");
-
-  const save = async (): Promise<void> => {
-    setSaving(true);
-    try {
-      await api.patch(`/v2/organizations/${org.id}`, draft);
-      toast.success("Organization profile saved");
-      await onSaved();
-    } catch (error) {
-      toast.error(errorMessage(error));
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  return (
-    <div className="cal-stack">
-      <SettingsSection
-        title="Public profile"
-        description="How your organization appears to anyone opening its booking page."
-        footer={
-          <Button loading={saving} disabled={!dirty} onClick={() => void save()}>
-            Save changes
-          </Button>
-        }
-      >
-        <div className="cal-org__identity">
-          <Avatar
-            name={draft.name || org.name}
-            src={draft.logoUrl || null}
-            size={64}
-            colorKey={org.slug ?? org.name}
-          />
-          <div className="cal-org__identity-fields">
-            <TextField
-              label="Name"
-              value={draft.name}
-              onChange={(event) => set({ name: event.target.value })}
-            />
-            <TextField
-              label="Logo URL"
-              placeholder="https://example.com/logo.png"
-              hint="Leave empty to use the initials shown here."
-              value={draft.logoUrl}
-              onChange={(event) => set({ logoUrl: event.target.value })}
-            />
-          </div>
-        </div>
-
-        <TextArea
-          label="Description"
-          placeholder="What your organization does, and what people can book."
-          hint="Shown under the name on your booking page."
-          value={draft.bio}
-          onChange={(event) => set({ bio: event.target.value })}
-        />
-      </SettingsSection>
-
-      <SettingsSection
-        title="Contact and location"
-        description="Optional. Anything you fill in is published on the booking page, so leave out what you would rather not share."
-        footer={
-          <Button loading={saving} disabled={!dirty} onClick={() => void save()}>
-            Save changes
-          </Button>
-        }
-      >
-        <TextField
-          label="Website"
-          placeholder="https://example.com"
-          value={draft.websiteUrl}
-          onChange={(event) => set({ websiteUrl: event.target.value })}
-        />
-        <TextField
-          label="Contact email"
-          type="email"
-          placeholder="hello@example.com"
-          value={draft.contactEmail}
-          onChange={(event) => set({ contactEmail: event.target.value })}
-        />
-        <TextField
-          label="Contact phone"
-          placeholder="+91 98765 43210"
-          value={draft.contactPhone}
-          onChange={(event) => set({ contactPhone: event.target.value })}
-        />
-        <TextField
-          label="Location"
-          placeholder="Sonipat, Haryana"
-          value={draft.location}
-          onChange={(event) => set({ location: event.target.value })}
-        />
-      </SettingsSection>
-    </div>
-  );
-}

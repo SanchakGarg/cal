@@ -84,9 +84,6 @@ export function ProfilePage({ username, teamSlug }: { username?: string; teamSlu
         {team && bookableMembers.length > 0 ? (
           <>
             <p className="cal-profile__section">Book a team member</p>
-            <p className="cal-hint cal-profile__section-hint">
-              Pick someone to meet one to one. Times come from their own availability.
-            </p>
             {bookableMembers.map((member) => (
               <MemberCard key={member.id} member={member} />
             ))}

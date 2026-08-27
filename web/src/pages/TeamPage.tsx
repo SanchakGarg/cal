@@ -21,6 +21,7 @@ import { Icon, type IconName } from "../ui/Icon.tsx";
 import { DropdownMenu, Popover } from "../ui/Popover.tsx";
 import { Select } from "../ui/Select.tsx";
 import { Switch } from "../ui/Switch.tsx";
+import { TeamProfileSettings } from "../ui/TeamProfileSettings.tsx";
 import { useToast } from "../ui/Toast.tsx";
 import { api, errorMessage } from "../lib/api.ts";
 import { openExternal } from "../lib/url.ts";
@@ -30,10 +31,11 @@ import { useAuth, useTimeFormat } from "../app/auth.tsx";
 import { useRouter } from "../app/router.tsx";
 import "./TeamPage.css";
 
-export type TeamTab = "dashboard" | "event-types" | "members" | "availability";
+export type TeamTab = "dashboard" | "profile" | "event-types" | "members" | "availability";
 
 const TABS: Array<{ value: TeamTab; label: string }> = [
   { value: "dashboard", label: "Dashboard" },
+  { value: "profile", label: "Profile" },
   { value: "event-types", label: "Event types" },
   { value: "members", label: "Members" },
   { value: "availability", label: "Availability" },
@@ -109,6 +111,13 @@ export function TeamPage({ teamId, tab }: { teamId: number; tab: TeamTab }) {
         ) : null}
         {tab === "members" ? (
           <TeamMembers teamId={teamId} members={members} onReload={load} />
+        ) : null}
+        {tab === "profile" ? (
+          team === null ? (
+            <Skeleton height={320} />
+          ) : (
+            <TeamProfileSettings team={team} endpoint={`/v2/teams/${teamId}`} onSaved={load} />
+          )
         ) : null}
         {tab === "availability" ? <TeamAvailability teamId={teamId} members={members ?? []} /> : null}
       </div>

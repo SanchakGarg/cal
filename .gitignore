@@ -3,3 +3,6 @@ dist
 .env
 *.log
 *.tsbuildinfo
+
+# Uploaded avatars and team logos (UPLOAD_DIR).
+var/

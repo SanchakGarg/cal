@@ -115,14 +115,12 @@ export function Shell({ children, wide = false }: { children: ReactNode; wide?: 
                 close={close}
                 items={[
                   { label: "My profile", onSelect: () => navigate("/settings/profile") },
-                  { label: "General settings", onSelect: () => navigate("/settings/general") },
-                  { label: "Calendars", onSelect: () => navigate("/settings/calendars") },
-                  { label: "Out of office", onSelect: () => navigate("/settings/out-of-office") },
                   {
+                    // Names the theme it switches to, so the label is the action.
                     label: theme === "dark" ? "Light theme" : "Dark theme",
                     onSelect: () => setTheme(theme === "dark" ? "light" : "dark"),
                   },
-                  { label: "View public page", onSelect: () => navigate(`/${me?.username ?? ""}`) },
+                  { label: "My page", onSelect: () => navigate(`/${me?.username ?? ""}`) },
                   {
                     label: "Sign out",
                     destructive: true,

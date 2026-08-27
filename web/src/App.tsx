@@ -203,7 +203,7 @@ export function App() {
     }
     const teamSection = matchPath("/teams/:id/:tab", path);
     if (teamSection) {
-      const tab = (["dashboard", "event-types", "members", "availability"] as TeamTab[]).includes(
+      const tab = (["dashboard", "profile", "event-types", "members", "availability"] as TeamTab[]).includes(
         teamSection.params.tab as TeamTab
       )
         ? (teamSection.params.tab as TeamTab)
