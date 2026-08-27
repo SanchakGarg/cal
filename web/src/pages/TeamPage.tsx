@@ -553,8 +553,14 @@ function TeamMembers({
         `/v2/teams/${teamId}/invite`,
         { email, role }
       );
-      const pending = result.find((entry) => entry.status === "invited");
-      toast.success(pending?.token ? `Invite created. Token: ${pending.token}` : `${email} added`);
+      const outcome = result[0]?.status;
+      toast.success(
+        outcome === "member"
+          ? `${email} is already on this team`
+          : outcome === "invited"
+            ? `Invitation sent to ${email}`
+            : `${email} was invited — they will see it on their teams page`
+      );
       setInviteOpen(false);
       setEmail("");
       await onReload();

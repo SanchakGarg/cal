@@ -34,6 +34,7 @@ import {
   getMembership,
   getTeam,
   inviteToTeam,
+  declineTokenInvite,
   listInvitationsForUser,
   respondToInvitation,
   setMemberPreferences,
@@ -178,6 +179,16 @@ teamsRouter.post(
   handler(async (req, res) => {
     const membershipId = paramInt(req.params.membershipId, "membershipId");
     ok(res, await respondToInvitation(currentUser(req).id, membershipId, true));
+  })
+);
+
+/** Declining a token invite, which has no membership row to act on. */
+teamsRouter.post(
+  "/invites/decline",
+  handler(async (req, res) => {
+    const user = currentUser(req);
+    const body = asObject(req.body);
+    ok(res, await declineTokenInvite(str(body, "token"), user.email));
   })
 );
 

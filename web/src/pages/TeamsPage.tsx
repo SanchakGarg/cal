@@ -35,13 +35,10 @@ export function TeamsPage() {
     setResponding(invitation.id);
     try {
       if (invitation.kind === "token") {
-        if (!accept) {
-          // Declining a token invite just means leaving it to expire; there is
-          // no membership row to remove yet.
-          setInvitations((current) => current.filter((entry) => entry !== invitation));
-          return;
-        }
-        await api.post("/v2/teams/invites/accept", { token: invitation.token });
+        await api.post(
+          accept ? "/v2/teams/invites/accept" : "/v2/teams/invites/decline",
+          { token: invitation.token }
+        );
       } else {
         await api.post(
           `/v2/teams/invitations/${invitation.id}/${accept ? "accept" : "decline"}`,

@@ -24,6 +24,8 @@ export async function notifyTeamInvites(
   if (!team) return;
 
   for (const outcome of outcomes) {
+    // Already a member: there is no invitation to announce.
+    if (outcome.status === "member") continue;
     sendMailInBackground({
       to: outcome.email,
       ...teamInviteMail({

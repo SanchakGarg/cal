@@ -267,8 +267,9 @@ export async function removeMembership(teamId: number, membershipId: number): Pr
 }
 
 export interface InviteResult {
+  /** `member` means they were already on the team, so nothing was sent. */
   email: string;
-  status: "invited" | "added";
+  status: "invited" | "added" | "member";
   token?: string;
   membershipId?: number;
 }
@@ -284,12 +285,17 @@ export async function inviteToTeam(
       invite.email,
     ]);
     if (user) {
-      const existing = await queryOne<{ id: number }>(
-        "SELECT id FROM memberships WHERE user_id = $1 AND team_id = $2",
+      const existing = await queryOne<{ id: number; accepted: boolean }>(
+        "SELECT id, accepted FROM memberships WHERE user_id = $1 AND team_id = $2",
         [user.id, teamId]
       );
       if (existing) {
-        results.push({ email: invite.email, status: "added", membershipId: existing.id });
+        // Someone already on the team should not be told they were just added.
+        results.push({
+          email: invite.email,
+          status: existing.accepted ? "member" : "added",
+          membershipId: existing.id,
+        });
         continue;
       }
       const membership = await addMembership(teamId, {
@@ -300,12 +306,24 @@ export async function inviteToTeam(
       results.push({ email: invite.email, status: "added", membershipId: membership.id });
       continue;
     }
+    // Re-inviting the same address must refresh the invitation in place. Adding
+    // a second row would leave two live tokens and list the invitation twice
+    // once the address has an account.
     const token = randomBytes(24).toString("base64url");
-    await query(
-      `INSERT INTO team_invites (team_id, email, role, token, expires_at)
-       VALUES ($1, $2, COALESCE($3, 'MEMBER'), $4, now() + interval '14 days')`,
+    const refreshed = await queryOne<{ token: string }>(
+      `UPDATE team_invites
+       SET token = $4, role = COALESCE($3, role), expires_at = now() + interval '14 days'
+       WHERE team_id = $1 AND lower(email) = lower($2) AND accepted_at IS NULL
+       RETURNING token`,
       [teamId, invite.email, invite.role ?? null, token]
     );
+    if (!refreshed) {
+      await query(
+        `INSERT INTO team_invites (team_id, email, role, token, expires_at)
+         VALUES ($1, $2, COALESCE($3, 'MEMBER'), $4, now() + interval '14 days')`,
+        [teamId, invite.email, invite.role ?? null, token]
+      );
+    }
     results.push({ email: invite.email, status: "invited", token });
   }
   return results;
@@ -428,12 +446,38 @@ export async function respondToInvitation(
   );
   if (!row) throw notFound("Invitation not found");
 
+  // Someone invited by email before they had an account, then invited again
+  // afterwards, has both a token row and a membership row. Settling one has to
+  // settle the other, or the invitation reappears from the half nobody answered.
+  await query(
+    `UPDATE team_invites SET accepted_at = now()
+     WHERE team_id = $1 AND accepted_at IS NULL
+       AND lower(email) = (SELECT lower(email) FROM users WHERE id = $2)`,
+    [row.team_id, userId]
+  );
+
   if (!accept) {
     await query("DELETE FROM memberships WHERE id = $1", [row.id]);
     return { status: "declined" };
   }
   await query("UPDATE memberships SET accepted = TRUE WHERE id = $1", [row.id]);
   return { status: "accepted" };
+}
+
+/**
+ * Declining an invitation that only exists as a token. The row is removed, so
+ * the invitation stops being offered instead of sitting there until it expires.
+ * The token must belong to the caller's own address.
+ */
+export async function declineTokenInvite(token: string, email: string): Promise<{ status: "declined" }> {
+  const row = await queryOne<{ id: number }>(
+    `DELETE FROM team_invites
+     WHERE token = $1 AND accepted_at IS NULL AND lower(email) = lower($2)
+     RETURNING id`,
+    [token, email]
+  );
+  if (!row) throw notFound("Invitation not found");
+  return { status: "declined" };
 }
 
 export async function acceptInvite(token: string, userId: number) {
