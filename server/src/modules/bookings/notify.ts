@@ -13,14 +13,18 @@ import type { presentBooking } from "./service.ts";
 
 type Booking = Awaited<ReturnType<typeof presentBooking>>;
 
-interface Recipient {
+export interface Recipient {
   email: string;
   name: string;
   timeZone: string;
 }
 
-/** Everyone who should hear about a change: the attendees, guests and hosts. */
-function recipients(booking: Booking): Recipient[] {
+/**
+ * Everyone who should hear about a change: the attendees, guests and hosts,
+ * de-duplicated by address so a host who booked their own event is mailed once.
+ * Exported for testing.
+ */
+export function mailRecipients(booking: Booking): Recipient[] {
   const seen = new Set<string>();
   const list: Recipient[] = [];
 
@@ -78,7 +82,7 @@ function invite(booking: Booking): { filename: string; content: string; contentT
 /** A booking was just made — confirmed outright, or awaiting the host. */
 export function notifyBookingCreated(booking: Booking): void {
   const pending = booking.status === "pending";
-  for (const recipient of recipients(booking)) {
+  for (const recipient of mailRecipients(booking)) {
     sendMailInBackground({
       to: recipient.email,
       ...bookingConfirmedMail(mailData(booking, recipient), pending),
@@ -90,7 +94,7 @@ export function notifyBookingCreated(booking: Booking): void {
 
 /** A pending booking was accepted or rejected by the host. */
 export function notifyBookingDecision(booking: Booking, accepted: boolean): void {
-  for (const recipient of recipients(booking)) {
+  for (const recipient of mailRecipients(booking)) {
     const data = mailData(booking, recipient);
     sendMailInBackground(
       accepted
@@ -101,7 +105,7 @@ export function notifyBookingDecision(booking: Booking, accepted: boolean): void
 }
 
 export function notifyBookingRescheduled(booking: Booking, previousStart: Date | null): void {
-  for (const recipient of recipients(booking)) {
+  for (const recipient of mailRecipients(booking)) {
     sendMailInBackground({
       to: recipient.email,
       ...bookingRescheduledMail(mailData(booking, recipient, previousStart)),
@@ -111,7 +115,7 @@ export function notifyBookingRescheduled(booking: Booking, previousStart: Date |
 }
 
 export function notifyBookingCancelled(booking: Booking): void {
-  for (const recipient of recipients(booking)) {
+  for (const recipient of mailRecipients(booking)) {
     sendMailInBackground({
       to: recipient.email,
       ...bookingCancelledMail(mailData(booking, recipient), false),

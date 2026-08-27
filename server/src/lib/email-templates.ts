@@ -16,7 +16,8 @@ function esc(value: string): string {
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
 export interface PersonLike {
@@ -125,7 +126,7 @@ function detailRows(data: BookingMailData): string {
 }
 
 function button(href: string, label: string): string {
-  return `<a href="${href}" style="display:inline-block;padding:11px 18px;border-radius:8px;background:${INK};color:#ffffff;font-size:14px;font-weight:600;text-decoration:none;">${esc(
+  return `<a href="${esc(href)}" style="display:inline-block;padding:11px 18px;border-radius:8px;background:${INK};color:#ffffff;font-size:14px;font-weight:600;text-decoration:none;">${esc(
     label
   )}</a>`;
 }
@@ -159,7 +160,7 @@ export function bookingConfirmedMail(data: BookingMailData, pending: boolean): O
       emoji: pending ? "🌱" : "🎉",
       body: `<p style="margin:0;font-size:14px;line-height:1.6;color:${MUTED};">${opener}</p>
         ${detailRows(data)}
-        ${data.meetingUrl ? `<p style="margin:0 0 18px;font-size:14px;">Join here: <a href="${data.meetingUrl}" style="color:${INK};">${esc(data.meetingUrl)}</a></p>` : ""}
+        ${data.meetingUrl ? `<p style="margin:0 0 18px;font-size:14px;">Join here: <a href="${esc(data.meetingUrl)}" style="color:${INK};">${esc(data.meetingUrl)}</a></p>` : ""}
         ${button(bookingUrl(data.uid), "View or reschedule")}
         <p style="margin:18px 0 0;font-size:12px;color:${MUTED};">Plans change — you can reschedule or cancel from that link any time.</p>`,
     }),
