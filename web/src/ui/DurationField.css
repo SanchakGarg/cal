@@ -1,0 +1,17 @@
+/* The number and its unit read as one control, so they sit on one row with the
+   unit sized to its content and bottom-aligned with the input. */
+.cal-duration {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.cal-duration > :first-child {
+  flex: 1;
+  min-width: 0;
+}
+
+.cal-duration__unit {
+  flex: none;
+  width: 96px;
+}

@@ -15,37 +15,131 @@ import type {
 export interface HostRef {
   userId: number;
   timeZone: string;
-  scheduleId: number | null;
+  /**
+   * Every schedule that applies to this host on this event type. Usually one,
+   * but a host may pick several, and their hours are then the union. Empty means
+   * the host has no availability at all for this event.
+   */
+  scheduleIds: number[];
   mandatory?: boolean;
   priority?: string;
   weight?: number;
 }
 
-export async function resolveHosts(eventType: EventTypeRow): Promise<HostRef[]> {
-  if (eventType.team_id) {
-    // A schedule the member marked personal-only contributes nothing to a team
-    // event: the host stays in the list with no schedule, so a round robin never
-    // offers them and a collective event — which needs everyone free — finds no
-    // slot rather than quietly booking a time they never offered.
-    return query<HostRef>(
-      `SELECT h.user_id AS "userId", u.time_zone AS "timeZone",
-              CASE WHEN s.exclude_from_team THEN NULL ELSE s.id END AS "scheduleId",
-              h.mandatory, h.priority, h.weight
-       FROM event_type_hosts h
-       JOIN users u ON u.id = h.user_id
-       LEFT JOIN schedules s ON s.id = COALESCE($2::int, u.default_schedule_id)
-       WHERE h.event_type_id = $1
-       ORDER BY h.user_id`,
-      [eventType.id, eventType.schedule_id]
-    );
+/**
+ * Which schedules apply to one host, in precedence order:
+ *
+ *   1. what the host chose for this event type
+ *   2. the schedule the event type pins for everyone, if it still applies
+ *   3. the host's default schedule
+ *
+ * An empty result means the host offers no hours here at all — which is a real
+ * answer, not a bug: it happens when their only schedule is marked personal-only
+ * and this is a team event.
+ */
+export function pickScheduleIds(input: {
+  chosen: number[];
+  eventTypeScheduleId: number | null;
+  defaultScheduleId: number | null;
+  /** Schedules allowed in this context; excludes personal-only ones on a team. */
+  usableIds: Set<number>;
+}): number[] {
+  if (input.chosen.length > 0) return input.chosen;
+  for (const candidate of [input.eventTypeScheduleId, input.defaultScheduleId]) {
+    if (candidate !== null && input.usableIds.has(candidate)) return [candidate];
   }
-  if (!eventType.owner_id) return [];
-  return query<HostRef>(
-    `SELECT u.id AS "userId", u.time_zone AS "timeZone",
-            COALESCE($2::int, u.default_schedule_id) AS "scheduleId"
-     FROM users u WHERE u.id = $1`,
-    [eventType.owner_id, eventType.schedule_id]
-  );
+  return [];
+}
+
+/**
+ * The schedules that apply to each host of an event type.
+ *
+ * A host's own selection wins. With no selection they fall back to the event
+ * type's schedule, and failing that to their default schedule — which is how
+ * every event type behaved before hosts could choose.
+ *
+ * A schedule the member marked personal-only never counts towards a team event.
+ * The host stays in the list with no hours, so a round robin never offers them
+ * and a collective event — which needs everyone free — finds no slot, rather
+ * than quietly booking a time they never offered.
+ */
+export async function resolveHosts(eventType: EventTypeRow): Promise<HostRef[]> {
+  const isTeam = Boolean(eventType.team_id);
+
+  // One shape for both cases; the team-only columns come back undefined for a
+  // personal event, which is what HostRef already allows.
+  interface BaseHost {
+    userId: number;
+    timeZone: string;
+    defaultScheduleId: number | null;
+    mandatory?: boolean;
+    priority?: string;
+    weight?: number;
+  }
+
+  const base: BaseHost[] = isTeam
+    ? await query<BaseHost>(
+        `SELECT h.user_id AS "userId", u.time_zone AS "timeZone",
+                u.default_schedule_id AS "defaultScheduleId",
+                h.mandatory, h.priority, h.weight
+         FROM event_type_hosts h
+         JOIN users u ON u.id = h.user_id
+         WHERE h.event_type_id = $1
+         ORDER BY h.user_id`,
+        [eventType.id]
+      )
+    : eventType.owner_id
+      ? await query<BaseHost>(
+          `SELECT u.id AS "userId", u.time_zone AS "timeZone",
+                  u.default_schedule_id AS "defaultScheduleId"
+           FROM users u WHERE u.id = $1`,
+          [eventType.owner_id]
+        )
+      : [];
+
+  if (base.length === 0) return [];
+
+  const [chosen, usable] = await Promise.all([
+    query<{ user_id: number; schedule_id: number }>(
+      `SELECT a.user_id, a.schedule_id
+       FROM event_type_availability a
+       JOIN schedules s ON s.id = a.schedule_id
+       WHERE a.event_type_id = $1
+         -- A schedule kept off team events is skipped even if it was chosen.
+         AND ($2::bool IS FALSE OR s.exclude_from_team IS FALSE)`,
+      [eventType.id, isTeam]
+    ),
+    // Fallback schedules have to pass the same personal-only check.
+    query<{ id: number; user_id: number }>(
+      `SELECT id, user_id FROM schedules
+       WHERE user_id = ANY($1::int[])
+         AND ($2::bool IS FALSE OR exclude_from_team IS FALSE)`,
+      [base.map((host) => host.userId), isTeam]
+    ),
+  ]);
+
+  const chosenByUser = new Map<number, number[]>();
+  for (const row of chosen) {
+    chosenByUser.set(row.user_id, [...(chosenByUser.get(row.user_id) ?? []), row.schedule_id]);
+  }
+  const usableIds = new Set(usable.map((row) => row.id));
+
+  return base.map((host) => {
+    const scheduleIds = pickScheduleIds({
+      chosen: chosenByUser.get(host.userId) ?? [],
+      eventTypeScheduleId: eventType.schedule_id,
+      defaultScheduleId: host.defaultScheduleId,
+      usableIds,
+    });
+    return {
+      userId: host.userId,
+      timeZone: host.timeZone,
+      scheduleIds,
+      mandatory: host.mandatory,
+      priority: host.priority,
+      weight: host.weight,
+    } satisfies HostRef;
+  });
 }
 
 interface AvailabilityRow {
@@ -94,9 +188,7 @@ export async function loadHostSchedules(
 ): Promise<HostSchedule[]> {
   if (hosts.length === 0) return [];
   const userIds = hosts.map((host) => host.userId);
-  const scheduleIds = hosts
-    .map((host) => host.scheduleId)
-    .filter((id): id is number => id !== null);
+  const scheduleIds = [...new Set(hosts.flatMap((host) => host.scheduleIds))];
 
   // Widen the query window by a day on each side so timezone shifts stay covered.
   const from = new Date(options.from.getTime() - 86400000);
@@ -155,19 +247,23 @@ export async function loadHostSchedules(
   }));
 
   return hosts.map((host) => {
-    const scheduleId = host.scheduleId;
+    // Several schedules union: their weekly blocks are concatenated and the slot
+    // engine merges the overlaps. Date overrides concatenate the same way, so a
+    // date with real hours in one schedule stays bookable even if another marks
+    // it unavailable — the wider window wins, matching the union everywhere else.
+    const applies = new Set(host.scheduleIds);
     return {
       userId: host.userId,
       timeZone: host.timeZone,
       weekly: availability
-        .filter((row) => row.schedule_id === scheduleId)
+        .filter((row) => applies.has(row.schedule_id))
         .map((row) => ({
           day: row.day,
           startTime: hhmm(row.start_time),
           endTime: hhmm(row.end_time),
         })),
       overrides: overrides
-        .filter((row) => row.schedule_id === scheduleId)
+        .filter((row) => applies.has(row.schedule_id))
         .map((row) => ({
           date: isoDate(row.date),
           startTime: row.start_time ? hhmm(row.start_time) : null,

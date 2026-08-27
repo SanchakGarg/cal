@@ -1,5 +1,5 @@
 import type { InputHTMLAttributes, ReactNode, TextareaHTMLAttributes } from "react";
-import { useId } from "react";
+import { useEffect, useId, useState } from "react";
 import "./Field.css";
 
 interface FieldShellProps {
@@ -74,6 +74,20 @@ interface NumberFieldProps extends Omit<InputHTMLAttributes<HTMLInputElement>, "
 
 export function NumberField({ label, hint, value, onValueChange, suffix, ...rest }: NumberFieldProps) {
   const id = useId();
+  // The box keeps its own text while it is being edited. Callers almost always
+  // substitute a number for an empty value ("" -> 0), and binding the input
+  // straight to that made the field impossible to clear: deleting the last
+  // digit put the substitute straight back and the caret sat after it. Local
+  // text lets the box be empty mid-edit; blur resyncs to whatever the caller
+  // settled on.
+  const [text, setText] = useState(value === "" ? "" : String(value));
+  const [editing, setEditing] = useState(false);
+
+  useEffect(() => {
+    if (editing) return;
+    setText(value === "" ? "" : String(value));
+  }, [value, editing]);
+
   return (
     <FieldShell label={label} hint={hint} htmlFor={id}>
       <div className="cal-input-group">
@@ -81,10 +95,17 @@ export function NumberField({ label, hint, value, onValueChange, suffix, ...rest
           id={id}
           type="number"
           className="cal-input"
-          value={value}
-          onChange={(event) =>
-            onValueChange(event.target.value === "" ? "" : Number(event.target.value))
-          }
+          value={text}
+          onFocus={() => setEditing(true)}
+          onBlur={() => {
+            setEditing(false);
+            setText(value === "" ? "" : String(value));
+          }}
+          onChange={(event) => {
+            const next = event.target.value;
+            setText(next);
+            onValueChange(next === "" ? "" : Number(next));
+          }}
           {...rest}
         />
         {suffix ? <span className="cal-input-group__suffix">{suffix}</span> : null}

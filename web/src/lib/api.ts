@@ -107,6 +107,9 @@ export const api = {
     rawRequest<T>(path, { ...options, method: "POST", body }),
   patch: <T>(path: string, body?: unknown, options: RequestOptions = {}) =>
     rawRequest<T>(path, { ...options, method: "PATCH", body }),
+  /** For endpoints that replace a whole collection rather than merge fields. */
+  put: <T>(path: string, body?: unknown, options: RequestOptions = {}) =>
+    rawRequest<T>(path, { ...options, method: "PUT", body }),
   delete: <T>(path: string, options: RequestOptions = {}) =>
     rawRequest<T>(path, { ...options, method: "DELETE" }),
 };

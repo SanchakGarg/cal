@@ -1,9 +1,10 @@
 import { Router } from "express";
-import { query, queryOne } from "../../db/pool.ts";
+import { query, queryOne, withTransaction } from "../../db/pool.ts";
 import { badRequest, forbidden, notFound } from "../../http/errors.ts";
 import { handler, ok } from "../../http/respond.ts";
-import { asObject, instant, optInt, optStr, paramInt } from "../../http/validate.ts";
+import { array, asObject, instant, optInt, optStr, paramInt } from "../../http/validate.ts";
 import { currentUser, optionalAuth, requireAuth } from "../../auth/middleware.ts";
+import type { EventTypeRow } from "../serialize.ts";
 import { parseEventTypeInput } from "./input.ts";
 import {
   assertCanManage,
@@ -19,6 +20,19 @@ import {
   updateEventType,
   updatePrivateLink,
 } from "./repo.ts";
+
+/**
+ * Passes for anyone who may manage the event type, and also for a plain host on
+ * it — hosts set their own availability without being able to edit the event.
+ */
+async function assertIsHostOrManager(row: EventTypeRow, userId: number): Promise<void> {
+  const host = await queryOne<{ user_id: number }>(
+    "SELECT user_id FROM event_type_hosts WHERE event_type_id = $1 AND user_id = $2",
+    [row.id, userId]
+  );
+  if (host) return;
+  await assertCanManage(row, userId);
+}
 
 export const eventTypesRouter: Router = Router();
 
@@ -145,6 +159,81 @@ eventTypesRouter.get(
       bookerLayouts: row.booker_layouts,
       lockTimeZoneToggleOnBookingPage: row.lock_timezone_toggle,
     });
+  })
+);
+
+/**
+ * The schedules the signed-in user has chosen for this event type.
+ *
+ * Availability is the host's own to set: a team admin picks who hosts, each host
+ * picks the hours they will host in. So this is scoped to the caller — a host on
+ * a team event may set their own selection without being able to manage the
+ * event type itself.
+ */
+eventTypesRouter.get(
+  "/:eventTypeId/my-availability",
+  requireAuth,
+  handler(async (req, res) => {
+    const user = currentUser(req);
+    const row = await findEventTypeById(paramInt(req.params.eventTypeId, "eventTypeId"));
+    await assertIsHostOrManager(row, user.id);
+    ok(res, {
+      scheduleIds: (
+        await query<{ schedule_id: number }>(
+          "SELECT schedule_id FROM event_type_availability WHERE event_type_id = $1 AND user_id = $2 ORDER BY schedule_id",
+          [row.id, user.id]
+        )
+      ).map((entry) => entry.schedule_id),
+    });
+  })
+);
+
+eventTypesRouter.put(
+  "/:eventTypeId/my-availability",
+  requireAuth,
+  handler(async (req, res) => {
+    const user = currentUser(req);
+    const row = await findEventTypeById(paramInt(req.params.eventTypeId, "eventTypeId"));
+    await assertIsHostOrManager(row, user.id);
+
+    const body = asObject(req.body);
+    const raw = array(body, "scheduleIds", { required: true });
+    const ids = [
+      ...new Set(
+        raw.map((entry, index) => {
+          if (typeof entry !== "number" || !Number.isInteger(entry)) {
+            throw badRequest(`scheduleIds[${index}] must be a schedule id`);
+          }
+          return entry;
+        })
+      ),
+    ];
+
+    // Only the caller's own schedules; otherwise this would let anyone attach
+    // someone else's hours to an event.
+    if (ids.length > 0) {
+      const owned = await query<{ id: number }>(
+        "SELECT id FROM schedules WHERE user_id = $1 AND id = ANY($2::int[])",
+        [user.id, ids]
+      );
+      if (owned.length !== ids.length) throw badRequest("That is not one of your schedules");
+    }
+
+    await withTransaction(async (tx) => {
+      await tx.query(
+        "DELETE FROM event_type_availability WHERE event_type_id = $1 AND user_id = $2",
+        [row.id, user.id]
+      );
+      for (const scheduleId of ids) {
+        await tx.query(
+          "INSERT INTO event_type_availability (event_type_id, user_id, schedule_id) VALUES ($1, $2, $3)",
+          [row.id, user.id, scheduleId]
+        );
+      }
+    });
+    // An empty list means "use my default availability", which is the absence of
+    // rows rather than a row pointing at the default.
+    ok(res, { scheduleIds: ids });
   })
 );
 

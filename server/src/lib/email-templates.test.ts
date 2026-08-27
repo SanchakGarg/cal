@@ -61,11 +61,12 @@ test("the event details a customer needs are all present", () => {
     booking({ description: "Bring the latest mockups." }),
     false
   );
-  for (const label of ["Event", "When", "Duration", "Where", "Reference"]) {
+  for (const label of ["Event", "When", "Duration", "Where"]) {
     assert.match(mail.html, new RegExp(`>${label}</td>`), label);
   }
   assert.match(mail.html, /30 minutes/);
-  assert.match(mail.html, /bk_123/);
+  // The booking reference is deliberately not shown to the customer.
+  assert.doesNotMatch(mail.html, />Reference</);
   assert.match(mail.html, /Bring the latest mockups\./);
 });
 

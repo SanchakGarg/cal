@@ -64,10 +64,11 @@
   min-width: 0;
 }
 
+/* Wide enough for a number beside its unit without the label wrapping. */
 .cal-limit-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px 16px;
 }
 
 .cal-schedule-preview {

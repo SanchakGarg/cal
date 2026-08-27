@@ -5,6 +5,7 @@ import { Checkbox, NumberField, RadioGroup, TextArea, TextField } from "../ui/Fi
 import { Badge, PageHeader, SettingsSection, Skeleton } from "../ui/Layout.tsx";
 import { LocationPicker } from "../ui/LocationPicker.tsx";
 import { QuestionBuilder } from "../ui/QuestionBuilder.tsx";
+import { DurationField } from "../ui/DurationField.tsx";
 import { MultiSelect, Select } from "../ui/Select.tsx";
 import { Switch } from "../ui/Switch.tsx";
 import { Tooltip } from "../ui/Tooltip.tsx";
@@ -197,7 +198,13 @@ export function EventTypeDetailPage({
             <SetupTab eventType={eventType} value={value} set={set} username={me?.username ?? ""} />
           ) : null}
           {tab === "availability" ? (
-            <AvailabilityTab eventType={eventType} schedules={schedules} value={value} set={set} />
+            <AvailabilityTab
+              eventType={eventType}
+              eventTypeId={eventTypeId}
+              schedules={schedules}
+              value={value}
+              set={set}
+            />
           ) : null}
           {tab === "limits" ? <LimitsTab eventType={eventType} value={value} set={set} /> : null}
           {tab === "advanced" ? (
@@ -284,35 +291,96 @@ function SetupTab({ eventType, value, set, username }: TabProps & { username: st
   );
 }
 
-function AvailabilityTab({ eventType, schedules, value, set }: TabProps & { schedules: Schedule[] }) {
-  const scheduleId = value<number | null>("scheduleId", eventType.scheduleId);
-  const selected = schedules.find((schedule) => schedule.id === scheduleId);
+function AvailabilityTab({
+  eventType,
+  eventTypeId,
+  schedules,
+}: TabProps & { eventTypeId: number; schedules: Schedule[] }) {
+  const toast = useToast();
+  // The selection belongs to the signed-in host, not to the event type, so it
+  // saves on its own rather than through the event type's draft.
+  const [chosen, setChosen] = useState<number[] | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    void api
+      .get<{ scheduleIds: number[] }>(`/v2/event-types/${eventTypeId}/my-availability`)
+      .then((data) => setChosen(data.scheduleIds))
+      .catch(() => setChosen([]));
+  }, [eventTypeId]);
+
+  const commit = async (next: number[]): Promise<void> => {
+    setChosen(next);
+    setSaving(true);
+    try {
+      await api.put(`/v2/event-types/${eventTypeId}/my-availability`, { scheduleIds: next });
+    } catch (error) {
+      toast.error(errorMessage(error));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (chosen === null) return <Skeleton height={220} />;
+
+  const usingDefault = chosen.length === 0;
+  const selected = schedules.filter((schedule) => chosen.includes(schedule.id));
 
   return (
     <SettingsSection
       title="Availability"
       description={
         eventType.teamId
-          ? "Team events combine the hosts' own schedules. Pick a schedule here to make everyone follow the same hours instead."
-          : "Which schedule decides when this event can be booked."
+          ? "The hours you will host this team event in. Every host picks their own, so nothing here changes anyone else's."
+          : "Which of your schedules decide when this event can be booked."
       }
     >
-      <Select
-        label="Schedule"
-        value={scheduleId ?? 0}
-        options={[
-          { value: 0, label: eventType.teamId ? "Each host's own schedule" : "Default schedule" },
-          ...schedules.map((schedule) => ({
-            value: schedule.id,
-            label: `${schedule.name}${schedule.isDefault ? " (default)" : ""}`,
-            description: schedule.timeZone,
-          })),
-        ]}
-        onChange={(next) => set("scheduleId", next === 0 ? null : next)}
+      <Switch
+        checked={usingDefault}
+        onChange={(checked) => void commit(checked ? [] : schedules.filter((s) => s.isDefault).map((s) => s.id))}
+        label="Use my default availability"
+        description="Follows whichever schedule is your default, so changing that changes this."
       />
-      {selected ? (
-        <div className="cal-schedule-preview">
-          {selected.availability.map((block, index) => (
+
+      {usingDefault ? null : (
+        <div className="cal-stack" style={{ gap: 8 }}>
+          <p className="cal-eyebrow">Schedules that apply</p>
+          {schedules.length === 0 ? (
+            <p className="cal-hint">You have no schedules yet.</p>
+          ) : (
+            schedules.map((schedule) => (
+              <Checkbox
+                key={schedule.id}
+                label={`${schedule.name}${schedule.isDefault ? " (default)" : ""} · ${schedule.timeZone}`}
+                checked={chosen.includes(schedule.id)}
+                onChange={(event) =>
+                  void commit(
+                    event.target.checked
+                      ? [...chosen, schedule.id]
+                      : chosen.filter((id) => id !== schedule.id)
+                  )
+                }
+              />
+            ))
+          )}
+          {/* Picking more than one is additive, which is not obvious. */}
+          {chosen.length > 1 ? (
+            <p className="cal-hint">
+              Hours from all {chosen.length} are offered — overlapping times count once.
+            </p>
+          ) : null}
+          {chosen.length === 0 ? (
+            <p className="cal-hint">
+              With none selected there are no bookable times, so nothing can be booked.
+            </p>
+          ) : null}
+        </div>
+      )}
+
+      {selected.map((schedule) => (
+        <div key={schedule.id} className="cal-schedule-preview">
+          <p className="cal-section-title">{schedule.name}</p>
+          {schedule.availability.map((block, index) => (
             <div key={index} className="cal-schedule-preview__row">
               <span>{block.days.map((day) => day.slice(0, 3)).join(", ")}</span>
               <span className="cal-muted">
@@ -320,12 +388,16 @@ function AvailabilityTab({ eventType, schedules, value, set }: TabProps & { sche
               </span>
             </div>
           ))}
-          <p className="cal-hint">Timezone: {selected.timeZone}</p>
-          {selected.overrides.length > 0 ? (
-            <p className="cal-hint">{selected.overrides.length} date override(s) applied</p>
+          <p className="cal-hint">Timezone: {schedule.timeZone}</p>
+          {schedule.overrides.length > 0 ? (
+            <p className="cal-hint">{schedule.overrides.length} date override(s) applied</p>
           ) : null}
         </div>
-      ) : null}
+      ))}
+
+      <p className="cal-hint">
+        {saving ? "Saving…" : null}
+      </p>
       <p className="cal-hint">
         Bookings made anywhere else — other event types, other teams — block these slots too, so a
         host is never double booked.
@@ -377,26 +449,22 @@ function LimitsTab({ eventType, value, set }: TabProps) {
     <>
       <SettingsSection title="Buffers and notice" description="Protect time around your meetings.">
         <div className="cal-limit-grid">
-          <NumberField
+          <DurationField
             label="Before event"
-            suffix="minutes"
-            min={0}
             value={value("beforeEventBuffer", eventType.beforeEventBuffer)}
-            onValueChange={(next) => set("beforeEventBuffer", next === "" ? 0 : next)}
+            onChange={(next) => set("beforeEventBuffer", next)}
           />
-          <NumberField
+          <DurationField
             label="After event"
-            suffix="minutes"
-            min={0}
             value={value("afterEventBuffer", eventType.afterEventBuffer)}
-            onValueChange={(next) => set("afterEventBuffer", next === "" ? 0 : next)}
+            onChange={(next) => set("afterEventBuffer", next)}
           />
-          <NumberField
+          {/* Notice is normally counted in hours, so an empty field starts there. */}
+          <DurationField
             label="Minimum notice"
-            suffix="minutes"
-            min={0}
+            defaultUnit="hours"
             value={value("minimumBookingNotice", eventType.minimumBookingNotice)}
-            onValueChange={(next) => set("minimumBookingNotice", next === "" ? 0 : next)}
+            onChange={(next) => set("minimumBookingNotice", next)}
           />
           <NumberField
             label="Time-slot intervals"

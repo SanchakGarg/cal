@@ -176,8 +176,6 @@ function detailRows(data: BookingMailData, options: { omitWhen?: boolean } = {})
     rows.push([data.hosts.length === 1 ? "With" : "Hosts", data.hosts.map((host) => esc(host.name)).join(", ")]);
   }
   if (data.location) rows.push(["Where", esc(data.location)]);
-  // A reference is what a customer quotes back when they write in about it.
-  rows.push(["Reference", `<span style="font-family:ui-monospace,monospace;">${esc(data.uid)}</span>`]);
 
   return `<table class="cal-rule" role="presentation" cellpadding="0" cellspacing="0" style="width:100%;margin:18px 0;border-top:1px solid ${LINE};border-bottom:1px solid ${LINE};">
     ${rows
@@ -216,7 +214,6 @@ function textDetails(data: BookingMailData, options: { omitWhen?: boolean } = {}
     lines.push(`With:      ${data.hosts.map((host) => host.name).join(", ")}`);
   }
   if (data.location) lines.push(`Where:     ${data.location}`);
-  lines.push(`Reference: ${data.uid}`);
   return lines.join("\n");
 }
 

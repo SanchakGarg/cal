@@ -21,6 +21,12 @@ interface SelectProps<T extends string | number> {
   disabled?: boolean;
   size?: "sm" | "md";
   width?: number;
+  /**
+   * Accessible name for a select with no visible label. Not `aria-label`: a
+   * hyphenated JSX attribute is accepted by TypeScript on any component and
+   * then silently dropped, so it has to be a declared prop to actually arrive.
+   */
+  ariaLabel?: string;
 }
 
 /** Listbox built from scratch: typeahead filter, arrow keys, portal popover. */
@@ -35,6 +41,7 @@ export function Select<T extends string | number>({
   disabled = false,
   size = "md",
   width,
+  ariaLabel,
 }: SelectProps<T>) {
   const [search, setSearch] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
@@ -72,6 +79,7 @@ export function Select<T extends string | number>({
             disabled={disabled}
             aria-haspopup="listbox"
             aria-expanded={open}
+            aria-label={ariaLabel}
             onClick={() => {
               toggle();
               setSearch("");
