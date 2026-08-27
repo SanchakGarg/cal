@@ -17,7 +17,6 @@ export type BookingStatus = "upcoming" | "unconfirmed" | "recurring" | "past" | 
 const ACTION_LABELS: Record<string, string> = {
   confirm: "Booking confirmed",
   decline: "Booking rejected",
-  "mark-absent": "Host marked absent",
   "request-reschedule": "Reschedule requested",
 };
 
@@ -75,15 +74,32 @@ export function BookingsPage({ status }: { status: BookingStatus }) {
 
   const act = async (
     booking: Booking,
-    action: "confirm" | "decline" | "mark-absent" | "request-reschedule"
+    action: "confirm" | "decline" | "request-reschedule"
   ): Promise<void> => {
     setBusyUid(booking.uid);
     try {
-      await api.post(
-        `/v2/bookings/${booking.uid}/${action}`,
-        action === "mark-absent" ? { host: true } : {}
-      );
+      await api.post(`/v2/bookings/${booking.uid}/${action}`, {});
       toast.success(ACTION_LABELS[action]);
+      await load();
+    } catch (error) {
+      toast.error(errorMessage(error));
+    } finally {
+      setBusyUid(null);
+    }
+  };
+
+  /** Records whether an attendee turned up. The same call undoes it. */
+  const setAttendeeAbsent = async (
+    booking: Booking,
+    email: string,
+    absent: boolean
+  ): Promise<void> => {
+    setBusyUid(booking.uid);
+    try {
+      await api.post(`/v2/bookings/${booking.uid}/mark-absent`, {
+        attendees: [{ email, absent }],
+      });
+      toast.success(absent ? "Marked as a no-show" : "Marked as attended");
       await load();
     } catch (error) {
       toast.error(errorMessage(error));
@@ -114,6 +130,7 @@ export function BookingsPage({ status }: { status: BookingStatus }) {
               const start = new Date(booking.start);
               const end = new Date(booking.end);
               const attendee = booking.attendees[0];
+              const noShows = booking.attendees.filter((person) => person.absent).length;
               return (
                 <ListRow key={booking.uid}>
                   <div className="cal-booking__when">
@@ -130,7 +147,11 @@ export function BookingsPage({ status }: { status: BookingStatus }) {
                       {booking.status === "cancelled" ? <Badge tone="error">Cancelled</Badge> : null}
                       {booking.status === "rejected" ? <Badge tone="error">Rejected</Badge> : null}
                       {booking.recurringEventUid ? <Badge startIcon="refresh">Recurring</Badge> : null}
-                      {booking.absentHost ? <Badge tone="error">Host absent</Badge> : null}
+                      {booking.attendees.length > 1 && noShows > 0 ? (
+                        <Badge tone="error">
+                          {noShows} of {booking.attendees.length} did not attend
+                        </Badge>
+                      ) : null}
                     </div>
                     {attendee ? (
                       <div className="cal-row cal-booking__attendee">
@@ -198,11 +219,16 @@ export function BookingsPage({ status }: { status: BookingStatus }) {
                               disabled: booking.status === "cancelled",
                               onSelect: () => setRescheduleTarget(booking),
                             },
-                            {
-                              label: "Mark host absent",
+                            ...booking.attendees.map((person) => ({
+                              // A menu item names the action, so it reads the
+                              // same whether one person is listed or several.
+                              label: `Mark ${
+                                booking.attendees.length === 1 ? "attendee" : person.name
+                              } as ${person.absent ? "attended" : "a no-show"}`,
                               disabled: booking.status === "cancelled",
-                              onSelect: () => void act(booking, "mark-absent"),
-                            },
+                              onSelect: () =>
+                                void setAttendeeAbsent(booking, person.email, !person.absent),
+                            })),
                             {
                               label: "Cancel booking",
                               destructive: true,
