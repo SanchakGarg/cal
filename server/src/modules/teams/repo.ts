@@ -13,7 +13,7 @@ import { DEFAULT_TIME_ZONE } from "../../lib/tz.ts";
 export const TEAM_COLUMNS = `
   id, parent_id, name, slug, logo_url, banner_url, bio, hide_branding, is_organization,
   is_private, hide_book_a_team_member, metadata, theme, brand_color, dark_brand_color,
-  time_format, time_zone, week_start`;
+  time_format, time_zone, week_start, website_url, contact_email, contact_phone, location`;
 
 const MEMBERSHIP_COLUMNS = `
   m.id, m.user_id, m.team_id, m.role, m.accepted, m.disable_impersonation, m.hide_personal_events,
@@ -26,6 +26,11 @@ export interface TeamInput {
   bio?: string;
   logoUrl?: string;
   bannerUrl?: string;
+  /** Public contact details, shown on the team's booking page. */
+  websiteUrl?: string;
+  contactEmail?: string;
+  contactPhone?: string;
+  location?: string;
   isPrivate?: boolean;
   hideBranding?: boolean;
   hideBookATeamMember?: boolean;
@@ -114,6 +119,10 @@ export async function updateTeam(teamId: number, input: Partial<TeamInput>) {
        time_zone = COALESCE($13, time_zone),
        week_start = COALESCE($14, week_start),
        time_format = COALESCE($15, time_format),
+       website_url = COALESCE($16, website_url),
+       contact_email = COALESCE($17, contact_email),
+       contact_phone = COALESCE($18, contact_phone),
+       location = COALESCE($19, location),
        updated_at = now()
      WHERE id = $1
      RETURNING ${TEAM_COLUMNS}`,
@@ -133,6 +142,10 @@ export async function updateTeam(teamId: number, input: Partial<TeamInput>) {
       input.timeZone ?? null,
       input.weekStart ?? null,
       input.timeFormat ?? null,
+      input.websiteUrl ?? null,
+      input.contactEmail ?? null,
+      input.contactPhone ?? null,
+      input.location ?? null,
     ]
   );
   if (!team) throw notFound("Team not found");

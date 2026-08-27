@@ -333,6 +333,10 @@ export interface TeamRow {
   logo_url: string | null;
   banner_url: string | null;
   bio: string | null;
+  website_url?: string | null;
+  contact_email?: string | null;
+  contact_phone?: string | null;
+  location?: string | null;
   hide_branding: boolean;
   is_organization: boolean;
   is_private: boolean;
@@ -355,6 +359,10 @@ export function serializeTeam(row: TeamRow) {
     logoUrl: row.logo_url,
     bannerUrl: row.banner_url,
     bio: row.bio,
+    websiteUrl: row.website_url ?? null,
+    contactEmail: row.contact_email ?? null,
+    contactPhone: row.contact_phone ?? null,
+    location: row.location ?? null,
     hideBranding: row.hide_branding,
     isOrganization: row.is_organization,
     isPrivate: row.is_private,

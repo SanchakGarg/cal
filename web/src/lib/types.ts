@@ -188,6 +188,11 @@ export interface Team {
   logoUrl: string | null;
   bannerUrl: string | null;
   bio: string | null;
+  /** Public contact details, shown on the team's booking page. */
+  websiteUrl: string | null;
+  contactEmail: string | null;
+  contactPhone: string | null;
+  location: string | null;
   hideBranding: boolean;
   isOrganization: boolean;
   isPrivate: boolean;

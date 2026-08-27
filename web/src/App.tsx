@@ -232,7 +232,7 @@ export function App() {
     }
     const orgTab = matchPath("/settings/organization/:tab", path);
     if (orgTab) {
-      const tab = orgTab.params.tab as "members" | "teams" | "availability";
+      const tab = orgTab.params.tab as "profile" | "members" | "teams" | "availability";
       return (
         <Shell>
           <OrganizationPage tab={tab} />

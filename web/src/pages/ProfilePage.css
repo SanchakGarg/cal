@@ -21,6 +21,39 @@
   font-size: var(--cal-text-4xl);
 }
 
+/* Contact details sit under the bio as one quiet row, wrapping on narrow
+   screens rather than stacking into a list of near-empty lines. */
+.cal-profile__contact {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px 16px;
+  margin-top: 4px;
+  padding: 0;
+  list-style: none;
+  font-size: var(--cal-text-sm);
+  color: var(--cal-text-subtle);
+}
+
+.cal-profile__contact li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.cal-profile__contact a {
+  color: var(--cal-text);
+  text-decoration: none;
+  border-bottom: 1px solid var(--cal-border);
+  transition: color var(--cal-duration-fast) ease, border-color var(--cal-duration-fast) ease;
+}
+
+.cal-profile__contact a:hover {
+  color: var(--cal-text-emphasis);
+  border-bottom-color: var(--cal-border-emphasis);
+}
+
 .cal-profile__events {
   width: 100%;
   max-width: 520px;

@@ -2,7 +2,7 @@
 // On a team page the visitor can also book a single member directly.
 import { useEffect, useState } from "react";
 import { Avatar, AvatarGroup, Badge, Skeleton } from "../ui/Layout.tsx";
-import { Icon } from "../ui/Icon.tsx";
+import { Icon, type IconName } from "../ui/Icon.tsx";
 import { api } from "../lib/api.ts";
 import type { EventType, PublicProfile, PublicTeamProfile } from "../lib/types.ts";
 import { durationLabel } from "../lib/time.ts";
@@ -63,6 +63,7 @@ export function ProfilePage({ username, teamSlug }: { username?: string; teamSlu
         )}
         <h1>{name}</h1>
         {bio ? <p className="cal-muted">{bio}</p> : null}
+        {team ? <ProfileContact team={team.profile} /> : null}
       </div>
 
       <div className="cal-profile__events">
@@ -93,6 +94,51 @@ export function ProfilePage({ username, teamSlug }: { username?: string; teamSlu
         ) : null}
       </div>
     </div>
+  );
+}
+
+/**
+ * A team's contact details, only the ones it filled in. Rendered as links where
+ * a link is what the reader wants: tapping a phone number should dial it.
+ */
+function ProfileContact({ team }: { team: PublicTeamProfile["profile"] }) {
+  const items: Array<{ icon: IconName; label: string; href?: string }> = [];
+  if (team.location) items.push({ icon: "mapPin", label: team.location });
+  if (team.websiteUrl) {
+    items.push({
+      icon: "link",
+      // The scheme is noise on screen but required in the href.
+      label: team.websiteUrl.replace(/^https?:\/\//, "").replace(/\/$/, ""),
+      href: /^https?:\/\//.test(team.websiteUrl) ? team.websiteUrl : `https://${team.websiteUrl}`,
+    });
+  }
+  if (team.contactEmail) {
+    items.push({ icon: "mail", label: team.contactEmail, href: `mailto:${team.contactEmail}` });
+  }
+  if (team.contactPhone) {
+    items.push({
+      icon: "phone",
+      label: team.contactPhone,
+      href: `tel:${team.contactPhone.replace(/[^+\d]/g, "")}`,
+    });
+  }
+  if (items.length === 0) return null;
+
+  return (
+    <ul className="cal-profile__contact">
+      {items.map((item) => (
+        <li key={item.label}>
+          <Icon name={item.icon} size={14} />
+          {item.href ? (
+            <a href={item.href} target={item.href.startsWith("http") ? "_blank" : undefined} rel="noreferrer">
+              {item.label}
+            </a>
+          ) : (
+            <span>{item.label}</span>
+          )}
+        </li>
+      ))}
+    </ul>
   );
 }
 

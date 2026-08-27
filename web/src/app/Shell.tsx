@@ -75,7 +75,7 @@ export function Shell({ children, wide = false }: { children: ReactNode; wide?: 
           })}
           {me?.organizationId ? (
             <Link
-              to="/settings/organization/members"
+              to="/settings/organization/profile"
               className={`cal-sidebar__link ${path.startsWith("/settings/organization") ? "is-active" : ""}`}
               onClick={() => setMobileOpen(false)}
             >
