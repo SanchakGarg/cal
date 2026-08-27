@@ -29,6 +29,7 @@ export function AvailabilityDetailPage({ scheduleId }: { scheduleId: number }) {
   const [name, setName] = useState("");
   const [timeZone, setTimeZone] = useState("UTC");
   const [isDefault, setIsDefault] = useState(false);
+  const [excludeFromTeam, setExcludeFromTeam] = useState(false);
   const [week, setWeek] = useState<WeeklySchedule | null>(null);
   const [overrides, setOverrides] = useState<OverrideEntry[]>([]);
   const [saving, setSaving] = useState(false);
@@ -42,6 +43,7 @@ export function AvailabilityDetailPage({ scheduleId }: { scheduleId: number }) {
         setName(data.name);
         setTimeZone(data.timeZone);
         setIsDefault(data.isDefault);
+        setExcludeFromTeam(data.excludeFromTeam);
         setWeek(blocksToWeek(data.availability));
         setOverrides(data.overrides);
       })
@@ -72,9 +74,10 @@ export function AvailabilityDetailPage({ scheduleId }: { scheduleId: number }) {
       name !== schedule.name ||
       timeZone !== schedule.timeZone ||
       isDefault !== schedule.isDefault ||
+      excludeFromTeam !== schedule.excludeFromTeam ||
       JSON.stringify(weekToBlocks(week)) !== JSON.stringify(schedule.availability)
     );
-  }, [schedule, week, name, timeZone, isDefault]);
+  }, [schedule, week, name, timeZone, isDefault, excludeFromTeam]);
 
   const save = async (): Promise<void> => {
     if (!week) return;
@@ -84,6 +87,7 @@ export function AvailabilityDetailPage({ scheduleId }: { scheduleId: number }) {
         name,
         timeZone,
         isDefault,
+        excludeFromTeam,
         availability: weekToBlocks(week),
         overrides,
       });
@@ -150,6 +154,7 @@ export function AvailabilityDetailPage({ scheduleId }: { scheduleId: number }) {
                 setName(schedule.name);
                 setTimeZone(schedule.timeZone);
                 setIsDefault(schedule.isDefault);
+                setExcludeFromTeam(schedule.excludeFromTeam);
                 setWeek(blocksToWeek(schedule.availability));
               }}
             >
@@ -174,6 +179,15 @@ export function AvailabilityDetailPage({ scheduleId }: { scheduleId: number }) {
         <aside className="cal-availability__side">
           <div className="cal-card cal-availability__panel">
             <TimezoneSelect label="Timezone" value={timeZone} onChange={setTimeZone} />
+          </div>
+          <div className="cal-card cal-availability__panel">
+            <Switch
+              checked={excludeFromTeam}
+              onChange={setExcludeFromTeam}
+              size="sm"
+              label="Keep this schedule off team events"
+              description="Team events, collective ones included, will not offer these hours — wherever you are added as a host."
+            />
           </div>
           <div className="cal-card cal-availability__panel">
             <DateOverrideList

@@ -117,6 +117,7 @@ schedulesRouter.patch(
       name: optStr(body, "name", { max: 120 }),
       timeZone: optTimeZone(body, "timeZone"),
       isDefault: optBool(body, "isDefault"),
+      excludeFromTeam: optBool(body, "excludeFromTeam"),
       availability: availability ? parseAvailability(availability) : undefined,
       overrides: overrides ? parseOverrides(overrides) : undefined,
     });

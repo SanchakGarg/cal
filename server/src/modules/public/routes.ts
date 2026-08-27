@@ -66,8 +66,15 @@ publicRouter.get(
     // team event. Teams can opt out of it, and a private team never lists anyone.
     const listMembers = !team.hide_book_a_team_member && !team.is_private;
     const memberRows = listMembers
-      ? await query<{ id: number; name: string; username: string; avatar_url: string | null; bio: string | null }>(
-          `SELECT u.id, u.name, u.username, u.avatar_url, u.bio
+      ? await query<{
+          id: number;
+          name: string;
+          username: string;
+          avatar_url: string | null;
+          bio: string | null;
+          hide_personal_events: boolean;
+        }>(
+          `SELECT u.id, u.name, u.username, u.avatar_url, u.bio, m.hide_personal_events
            FROM memberships m JOIN users u ON u.id = m.user_id
            WHERE m.team_id = $1 AND m.accepted = TRUE ORDER BY u.id`,
           [team.id]
@@ -75,12 +82,15 @@ publicRouter.get(
       : [];
 
     // Each member's own public events, so the page can offer them without a second round trip.
-    const memberEventTypes = memberRows.length
+    const listedMemberIds = memberRows
+      .filter((member) => !member.hide_personal_events)
+      .map((member) => member.id);
+    const memberEventTypes = listedMemberIds.length
       ? await query<EventTypeRow>(
           `SELECT * FROM event_types
            WHERE owner_id = ANY($1::int[]) AND team_id IS NULL AND hidden = FALSE
            ORDER BY owner_id, id`,
-          [memberRows.map((member) => member.id)]
+          [listedMemberIds]
         )
       : [];
     const presentedMemberEvents = await Promise.all(memberEventTypes.map(present));

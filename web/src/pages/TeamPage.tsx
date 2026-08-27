@@ -537,6 +537,7 @@ function TeamMembers({
   onReload: () => Promise<void>;
 }) {
   const toast = useToast();
+  const { me } = useAuth();
   const [inviteOpen, setInviteOpen] = useState(false);
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<(typeof ROLES)[number]>("MEMBER");
@@ -561,6 +562,17 @@ function TeamMembers({
       toast.error(errorMessage(error));
     } finally {
       setSaving(false);
+    }
+  };
+
+  const mine = members?.find((membership) => membership.userId === me?.id) ?? null;
+
+  const setMyVisibility = async (hidePersonalEvents: boolean): Promise<void> => {
+    try {
+      await api.patch(`/v2/teams/${teamId}/my-membership`, { hidePersonalEvents });
+      await onReload();
+    } catch (error) {
+      toast.error(errorMessage(error));
     }
   };
 
@@ -619,6 +631,18 @@ function TeamMembers({
           Add member
         </Button>
       </div>
+
+      {mine ? (
+        <div className="cal-card" style={{ padding: "14px 16px" }}>
+          <Switch
+            size="sm"
+            checked={mine.hidePersonalEvents}
+            onChange={(checked) => void setMyVisibility(checked)}
+            label="Keep my own event types off this team's page"
+            description="Your personal booking link keeps working — the team page just stops advertising it."
+          />
+        </div>
+      ) : null}
 
       {/* Only worth the row's height once the list is long enough to scroll. */}
       {members.length > 8 ? (

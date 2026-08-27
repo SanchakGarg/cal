@@ -36,6 +36,7 @@ import {
   inviteToTeam,
   listInvitationsForUser,
   respondToInvitation,
+  setMemberPreferences,
   listMemberships,
   listTeamsForUser,
   removeMembership,
@@ -138,6 +139,24 @@ teamsRouter.post(
   handler(async (req, res) => {
     const body = asObject(req.body);
     ok(res, await acceptInvite(str(body, "token"), currentUser(req).id));
+  })
+);
+
+/**
+ * The member's own settings for one team. Any accepted member may call this for
+ * themselves — it governs whether their personal events are advertised on the
+ * team page, which is theirs to decide, not the team admin's.
+ */
+teamsRouter.patch(
+  "/:teamId/my-membership",
+  handler(async (req, res) => {
+    const teamId = paramInt(req.params.teamId, "teamId");
+    const user = currentUser(req);
+    await assertTeamRole(user.id, teamId, ["OWNER", "ADMIN", "MEMBER"]);
+    const body = asObject(req.body);
+    ok(res, await setMemberPreferences(user.id, teamId, {
+      hidePersonalEvents: optBool(body, "hidePersonalEvents"),
+    }));
   })
 );
 

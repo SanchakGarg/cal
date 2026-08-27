@@ -485,6 +485,11 @@ function AdvancedTab({ eventType, value, set, eventTypeId }: TabProps & { eventT
     | { type?: string; noticeThreshold?: { count: number; unit: string }; disabled?: boolean }
     | null;
   const seatsEnabled = Boolean(seats && !seats.disabled && seats.seatsPerTimeSlot);
+  // Host capacity is only a number worth showing when several hosts share the
+  // event and only one of them takes each booking.
+  const hostCapacityApplies =
+    (eventType.schedulingType === "roundRobin" || eventType.schedulingType === "managed") &&
+    (eventType.hosts?.length ?? 0) > 1;
   const confirmationEnabled = Boolean(confirmation && !confirmation.disabled && confirmation.type);
 
   const [links, setLinks] = useState<Array<{ linkId: string; bookingUrl: string | null; isExpired: boolean }>>([]);
@@ -574,18 +579,22 @@ function AdvancedTab({ eventType, value, set, eventTypeId }: TabProps & { eventT
         />
       </SettingsSection>
 
-      <SettingsSection title="Seats" description="Let several people book the same slot.">
+      <SettingsSection
+        title="Seats"
+        description="Let more than one person come to the same booking."
+      >
         <Switch
           checked={seatsEnabled}
           onChange={(checked) =>
             set(
               "seats",
               checked
-                ? { seatsPerTimeSlot: 5, showAttendeeInfo: false, showAvailabilityCount: true }
-                : { disabled: true }
+                ? { seatsPerTimeSlot: 2, showAttendeeInfo: false, showAvailabilityCount: true }
+                : { disabled: true, showAvailabilityCount: seats?.showAvailabilityCount ?? true }
             )
           }
           label="Offer seats"
+          description="One booking, several attendees — for when people come together."
         />
         {seatsEnabled ? (
           <>
@@ -593,7 +602,7 @@ function AdvancedTab({ eventType, value, set, eventTypeId }: TabProps & { eventT
               label="Seats per time slot"
               suffix="seats"
               min={1}
-              value={seats.seatsPerTimeSlot ?? 5}
+              value={seats.seatsPerTimeSlot ?? 2}
               onValueChange={(next) => set("seats", { ...seats, seatsPerTimeSlot: next === "" ? 1 : next })}
             />
             <Checkbox
@@ -601,12 +610,26 @@ function AdvancedTab({ eventType, value, set, eventTypeId }: TabProps & { eventT
               checked={seats.showAttendeeInfo ?? false}
               onChange={(event) => set("seats", { ...seats, showAttendeeInfo: event.target.checked })}
             />
-            <Checkbox
-              label="Show the number of available seats"
-              checked={seats.showAvailabilityCount ?? true}
-              onChange={(event) => set("seats", { ...seats, showAvailabilityCount: event.target.checked })}
-            />
           </>
+        ) : null}
+
+        {/* One switch covers both kinds of capacity. With seats on it publishes
+            places left in the booking; on a round robin or managed team event it
+            publishes how many hosts are still free, which is how many separate
+            bookings that time can still take. A collective event has neither —
+            every host attends, so the count would always read as all of them. */}
+        {seatsEnabled || hostCapacityApplies ? (
+          <Checkbox
+            label={
+              seatsEnabled
+                ? "Show how many seats are left"
+                : "Show how many hosts are still free at each time"
+            }
+            checked={seats?.showAvailabilityCount ?? true}
+            onChange={(event) =>
+              set("seats", { ...(seats ?? { disabled: true }), showAvailabilityCount: event.target.checked })
+            }
+          />
         ) : null}
       </SettingsSection>
 

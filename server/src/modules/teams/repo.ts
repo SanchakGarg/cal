@@ -16,7 +16,7 @@ export const TEAM_COLUMNS = `
   time_format, time_zone, week_start`;
 
 const MEMBERSHIP_COLUMNS = `
-  m.id, m.user_id, m.team_id, m.role, m.accepted, m.disable_impersonation,
+  m.id, m.user_id, m.team_id, m.role, m.accepted, m.disable_impersonation, m.hide_personal_events,
   u.name AS user_name, u.email AS user_email, u.username AS user_username,
   u.avatar_url AS user_avatar_url`;
 
@@ -389,6 +389,21 @@ export async function listInvitationsForUser(
  * admin membership route: the invitee has no role on the team yet, so there is
  * nothing to authorise against beyond the row being theirs.
  */
+/** The member's own preference about their events appearing on the team page. */
+export async function setMemberPreferences(
+  userId: number,
+  teamId: number,
+  input: { hidePersonalEvents?: boolean }
+) {
+  const row = await queryOne<{ id: number }>(
+    `UPDATE memberships SET hide_personal_events = COALESCE($3, hide_personal_events)
+     WHERE team_id = $1 AND user_id = $2 RETURNING id`,
+    [teamId, userId, input.hidePersonalEvents ?? null]
+  );
+  if (!row) throw notFound("You are not a member of this team");
+  return getMembership(teamId, row.id);
+}
+
 export async function respondToInvitation(
   userId: number,
   membershipId: number,

@@ -104,11 +104,6 @@ function EventCard({ eventType, href }: { eventType: EventType; href: string }) 
         {eventType.description ? <p className="cal-hint">{eventType.description}</p> : null}
         <div className="cal-row cal-profile__event-meta">
           <Badge startIcon="clock">{durationLabel(eventType.lengthInMinutes)}</Badge>
-          {eventType.schedulingType ? (
-            <Badge tone="info">
-              {eventType.schedulingType === "roundRobin" ? "Round robin" : eventType.schedulingType}
-            </Badge>
-          ) : null}
           {eventType.seats && !eventType.seats.disabled ? (
             <Badge startIcon="users">{eventType.seats.seatsPerTimeSlot} seats</Badge>
           ) : null}
@@ -145,17 +140,11 @@ function MemberCard({ member }: { member: PublicTeamProfile["members"][number] }
       {open ? (
         <div className="cal-profile__member-events">
           {member.eventTypes.map((eventType) => (
-            <Link
+            <EventCard
               key={eventType.id}
-              to={`/${member.username}/${eventType.slug}`}
-              className="cal-profile__member-event"
-            >
-              <span>
-                <strong>{eventType.title}</strong>
-                <span className="cal-hint"> · {durationLabel(eventType.lengthInMinutes)}</span>
-              </span>
-              <Icon name="chevronRight" size={14} />
-            </Link>
+              eventType={eventType}
+              href={`/${member.username}/${eventType.slug}`}
+            />
           ))}
           <Link to={`/${member.username}`} className="cal-profile__member-all">
             View full profile

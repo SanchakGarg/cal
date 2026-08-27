@@ -23,12 +23,17 @@ export interface HostRef {
 
 export async function resolveHosts(eventType: EventTypeRow): Promise<HostRef[]> {
   if (eventType.team_id) {
+    // A schedule the member marked personal-only contributes nothing to a team
+    // event: the host stays in the list with no schedule, so a round robin never
+    // offers them and a collective event — which needs everyone free — finds no
+    // slot rather than quietly booking a time they never offered.
     return query<HostRef>(
       `SELECT h.user_id AS "userId", u.time_zone AS "timeZone",
-              COALESCE($2::int, u.default_schedule_id) AS "scheduleId",
+              CASE WHEN s.exclude_from_team THEN NULL ELSE s.id END AS "scheduleId",
               h.mandatory, h.priority, h.weight
        FROM event_type_hosts h
        JOIN users u ON u.id = h.user_id
+       LEFT JOIN schedules s ON s.id = COALESCE($2::int, u.default_schedule_id)
        WHERE h.event_type_id = $1
        ORDER BY h.user_id`,
       [eventType.id, eventType.schedule_id]

@@ -173,6 +173,11 @@
   min-width: 92px;
 }
 
+/* A capacity line makes the button taller, so give the row room for it. */
+.cal-booker__list-slots .cal-slot:has(.cal-slot__seats) {
+  min-width: 118px;
+}
+
 .cal-booker__footer {
   font-size: var(--cal-text-xs);
   color: var(--cal-text-muted);

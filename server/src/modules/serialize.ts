@@ -44,6 +44,7 @@ export interface ScheduleRow {
   user_id: number;
   name: string;
   time_zone: string;
+  exclude_from_team?: boolean;
 }
 
 export interface AvailabilityRow {
@@ -88,6 +89,8 @@ export function serializeSchedule(
     timeZone: schedule.time_zone,
     availability: [...grouped.values()],
     isDefault: defaultScheduleId === schedule.id,
+    /** When true, team events never draw availability from this schedule. */
+    excludeFromTeam: schedule.exclude_from_team ?? false,
     overrides: overrides.map((override) => ({
       date: isoDate(override.date),
       startTime: override.start_time ? hhmm(override.start_time) : null,
@@ -373,6 +376,7 @@ export interface MembershipRow {
   role: string;
   accepted: boolean;
   disable_impersonation: boolean;
+  hide_personal_events?: boolean;
   user_name?: string;
   user_email?: string;
   user_username?: string;
@@ -387,6 +391,8 @@ export function serializeMembership(row: MembershipRow) {
     role: row.role,
     accepted: row.accepted,
     disableImpersonation: row.disable_impersonation,
+    /** The member's own choice to keep their events off the team page. */
+    hidePersonalEvents: row.hide_personal_events ?? false,
     user:
       row.user_email === undefined
         ? undefined

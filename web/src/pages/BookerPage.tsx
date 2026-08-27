@@ -7,7 +7,7 @@ import { BookingFieldInput } from "../ui/BookingFieldInput.tsx";
 import { Avatar, AvatarGroup, Badge, SegmentedControl, Skeleton } from "../ui/Layout.tsx";
 import { Select } from "../ui/Select.tsx";
 import { TimezoneSelect } from "../ui/TimePickers.tsx";
-import { TimeSlotColumn } from "../ui/TimeSlots.tsx";
+import { TimeSlotColumn, capacityLabel } from "../ui/TimeSlots.tsx";
 import { Icon } from "../ui/Icon.tsx";
 import { locationIcon, locationLabel } from "../ui/LocationPicker.tsx";
 import { useToast } from "../ui/Toast.tsx";
@@ -450,7 +450,10 @@ export function BookerPage({ username, teamSlug, eventSlug, rescheduleUid }: Boo
                                 void reserve(slot.start);
                               }}
                             >
-                              {formatTime(new Date(slot.start), timeZone, timeFormat)}
+                              <span>{formatTime(new Date(slot.start), timeZone, timeFormat)}</span>
+                              {capacityLabel(slot) ? (
+                                <span className="cal-slot__seats">{capacityLabel(slot)}</span>
+                              ) : null}
                             </button>
                           ))}
                         </div>

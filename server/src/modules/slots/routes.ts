@@ -10,6 +10,7 @@ import { generateSlots, groupSlotsByDate } from "../../lib/slots.ts";
 import type { EventTypeRow } from "../serialize.ts";
 import { findPublicEventType } from "../event-types/repo.ts";
 import { loadHostSchedules, resolveHosts, slotOptionsFor } from "../availability/loader.ts";
+import { capacityKind, capacityOf } from "./capacity.ts";
 
 const MAX_RANGE_DAYS = 370;
 
@@ -86,6 +87,7 @@ slotsRouter.get(
       ignoreBookingUids: rescheduleUid ? [rescheduleUid] : undefined,
     });
     const slots = generateSlots(hosts, options);
+    const capacity = capacityKind(eventType);
 
     const format = optStr(q, "format") ?? "time";
     if (format === "range") {
@@ -95,9 +97,7 @@ slotsRouter.get(
         payload[date] = entries.map((slot) => ({
           start: new Date(slot.start).toISOString(),
           end: new Date(slot.end).toISOString(),
-          ...(slot.seatsRemaining !== undefined
-            ? { seatsRemaining: slot.seatsRemaining, seatsTotal: slot.seatsTotal }
-            : {}),
+          ...capacityOf(slot, capacity, hosts.length),
         }));
       }
       ok(res, payload);
@@ -109,9 +109,7 @@ slotsRouter.get(
     for (const [date, entries] of Object.entries(grouped)) {
       payload[date] = entries.map((slot) => ({
         start: new Date(slot.start).toISOString(),
-        ...(slot.seatsRemaining !== undefined
-          ? { seatsRemaining: slot.seatsRemaining, seatsTotal: slot.seatsTotal }
-          : {}),
+        ...capacityOf(slot, capacity, hosts.length),
       }));
     }
     ok(res, payload);

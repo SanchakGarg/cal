@@ -4,8 +4,27 @@ import "./TimeSlots.css";
 
 export interface Slot {
   start: string;
+  /** Attendee places left inside one booking, when the event offers seats. */
   seatsRemaining?: number;
   seatsTotal?: number;
+  /** Hosts still free at this time, for round robin and managed events. */
+  hostsAvailable?: number;
+  hostsTotal?: number;
+}
+
+/**
+ * What is left at this time, in the reader's terms. Seats are places in one
+ * meeting; hosts are separate bookings that can still be made at the same time.
+ */
+export function capacityLabel(slot: Slot): string | null {
+  if (slot.seatsRemaining !== undefined && slot.seatsTotal !== undefined) {
+    if (slot.seatsRemaining <= 0) return "Full";
+    return `${slot.seatsRemaining} of ${slot.seatsTotal} seats left`;
+  }
+  if (slot.hostsAvailable !== undefined && slot.hostsTotal !== undefined) {
+    return `${slot.hostsAvailable}/${slot.hostsTotal} available`;
+  }
+  return null;
 }
 
 interface TimeSlotColumnProps {
@@ -51,11 +70,7 @@ export function TimeSlotColumn({
           onClick={() => onSelect(slot.start)}
         >
           <span>{formatTime(new Date(slot.start), timeZone, timeFormat)}</span>
-          {slot.seatsRemaining !== undefined && slot.seatsTotal !== undefined ? (
-            <span className="cal-slot__seats">
-              {slot.seatsRemaining}/{slot.seatsTotal} seats
-            </span>
-          ) : null}
+          {capacityLabel(slot) ? <span className="cal-slot__seats">{capacityLabel(slot)}</span> : null}
         </button>
       ))}
     </div>

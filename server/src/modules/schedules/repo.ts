@@ -23,6 +23,8 @@ export interface ScheduleInput {
   name: string;
   timeZone: string;
   isDefault: boolean;
+  /** Keep this schedule out of team events, collective ones included. */
+  excludeFromTeam?: boolean;
   availability?: AvailabilityInput[];
   overrides?: OverrideInput[];
 }
@@ -89,17 +91,22 @@ export async function updateSchedule(
 ): Promise<void> {
   await withTransaction(async (tx) => {
     const existing = await tx.queryOne<ScheduleRow>(
-      "SELECT id, user_id, name, time_zone FROM schedules WHERE id = $1 AND user_id = $2",
+      "SELECT id, user_id, name, time_zone, exclude_from_team FROM schedules WHERE id = $1 AND user_id = $2",
       [scheduleId, userId]
     );
     if (!existing) throw notFound("Schedule not found");
 
-    if (input.name !== undefined || input.timeZone !== undefined) {
+    if (
+      input.name !== undefined ||
+      input.timeZone !== undefined ||
+      input.excludeFromTeam !== undefined
+    ) {
       await tx.query(
         `UPDATE schedules
-         SET name = COALESCE($2, name), time_zone = COALESCE($3, time_zone), updated_at = now()
+         SET name = COALESCE($2, name), time_zone = COALESCE($3, time_zone),
+             exclude_from_team = COALESCE($4, exclude_from_team), updated_at = now()
          WHERE id = $1`,
-        [scheduleId, input.name ?? null, input.timeZone ?? null]
+        [scheduleId, input.name ?? null, input.timeZone ?? null, input.excludeFromTeam ?? null]
       );
     }
     if (input.availability !== undefined) {
@@ -116,7 +123,7 @@ export async function updateSchedule(
 
 export async function getScheduleDetail(scheduleId: number, userId?: number) {
   const schedule = await queryOne<ScheduleRow>(
-    `SELECT id, user_id, name, time_zone FROM schedules
+    `SELECT id, user_id, name, time_zone, exclude_from_team FROM schedules
      WHERE id = $1 ${userId !== undefined ? "AND user_id = $2" : ""}`,
     userId !== undefined ? [scheduleId, userId] : [scheduleId]
   );
@@ -126,7 +133,7 @@ export async function getScheduleDetail(scheduleId: number, userId?: number) {
 
 export async function listSchedules(userId: number) {
   const schedules = await query<ScheduleRow>(
-    "SELECT id, user_id, name, time_zone FROM schedules WHERE user_id = $1 ORDER BY id",
+    "SELECT id, user_id, name, time_zone, exclude_from_team FROM schedules WHERE user_id = $1 ORDER BY id",
     [userId]
   );
   return Promise.all(schedules.map(buildDetail));

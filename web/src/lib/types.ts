@@ -35,6 +35,8 @@ export interface Schedule {
   timeZone: string;
   availability: AvailabilityBlock[];
   isDefault: boolean;
+  /** When true, team events never draw availability from this schedule. */
+  excludeFromTeam: boolean;
   overrides: DateOverride[];
 }
 
@@ -206,6 +208,8 @@ export interface Membership {
   role: "OWNER" | "ADMIN" | "MEMBER";
   accepted: boolean;
   disableImpersonation: boolean;
+  /** The member's own choice to keep their events off the team page. */
+  hidePersonalEvents: boolean;
   user?: { id: number; name: string; email: string; username: string; avatarUrl: string | null };
 }
 
@@ -249,7 +253,13 @@ export interface GoogleCalendarOption {
 }
 
 export interface SlotMap {
-  [date: string]: Array<{ start: string; seatsRemaining?: number; seatsTotal?: number }>;
+  [date: string]: Array<{
+    start: string;
+    seatsRemaining?: number;
+    seatsTotal?: number;
+    hostsAvailable?: number;
+    hostsTotal?: number;
+  }>;
 }
 
 export interface PublicProfile {
