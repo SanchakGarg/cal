@@ -11,7 +11,8 @@ import {
 
 function booking(overrides: Partial<BookingMailData> = {}): BookingMailData {
   return {
-    title: "Product design review",
+    eventName: "Product design review",
+    description: null,
     // 05:00 UTC is 10:30 in Kolkata, which makes a timezone mistake obvious.
     start: new Date("2026-08-27T05:00:00.000Z"),
     end: new Date("2026-08-27T05:30:00.000Z"),
@@ -19,7 +20,6 @@ function booking(overrides: Partial<BookingMailData> = {}): BookingMailData {
     location: "Cal Video",
     meetingUrl: null,
     hosts: [{ name: "Ada Lovelace", email: "ada@example.com" }],
-    attendeeName: "Grace Hopper",
     uid: "bk_123",
     reason: null,
     previousStart: null,
@@ -29,15 +29,64 @@ function booking(overrides: Partial<BookingMailData> = {}): BookingMailData {
 
 test("a confirmed booking is announced as booked, not requested", () => {
   const mail = bookingConfirmedMail(booking(), false);
-  assert.equal(mail.subject, "Confirmed: Product design review");
-  assert.match(mail.html, /booked in<\/h1>/);
-  assert.doesNotMatch(mail.html, /awaiting confirmation/i);
+  assert.equal(mail.subject, "Booking confirmed — Product design review");
+  assert.match(mail.html, /Your booking is confirmed<\/h1>/);
+  assert.doesNotMatch(mail.html, /needs to be approved/i);
 });
 
 test("a pending booking says it is awaiting the host", () => {
   const mail = bookingConfirmedMail(booking(), true);
-  assert.equal(mail.subject, "Requested: Product design review");
-  assert.match(mail.html, /awaiting confirmation/i);
+  assert.equal(mail.subject, "Booking request received — Product design review");
+  assert.match(mail.html, /needs to be approved/i);
+});
+
+test("the confirmation opens with what it is, not a greeting", () => {
+  const mail = bookingConfirmedMail(booking(), false);
+  assert.match(mail.html, /This is confirmation of your booking/);
+  // A greeting built from a booking name reads badly the moment someone types
+  // something that is not a name into the field.
+  assert.doesNotMatch(mail.html, /Thanks/i);
+  assert.doesNotMatch(mail.text, /Thanks/i);
+});
+
+test("nothing tells the customer who else was notified", () => {
+  const mail = bookingConfirmedMail(booking(), false);
+  assert.doesNotMatch(mail.html, /everyone/i);
+  assert.doesNotMatch(mail.html, /has been told/i);
+});
+
+test("the event details a customer needs are all present", () => {
+  const mail = bookingConfirmedMail(
+    booking({ description: "Bring the latest mockups." }),
+    false
+  );
+  for (const label of ["Event", "When", "Duration", "Where", "Reference"]) {
+    assert.match(mail.html, new RegExp(`>${label}</td>`), label);
+  }
+  assert.match(mail.html, /30 minutes/);
+  assert.match(mail.html, /bk_123/);
+  assert.match(mail.html, /Bring the latest mockups\./);
+});
+
+test("an event with no description simply omits the block", () => {
+  const mail = bookingConfirmedMail(booking({ description: null }), false);
+  assert.match(mail.html, />Event<\/td>/);
+  assert.doesNotMatch(mail.text, /\n\n\n/);
+});
+
+test("durations over an hour read as hours", () => {
+  const ninety = bookingConfirmedMail(
+    booking({ end: new Date("2026-08-27T06:30:00.000Z") }),
+    false
+  );
+  assert.match(ninety.html, /1 hour 30 minutes/);
+
+  const exact = bookingConfirmedMail(
+    booking({ end: new Date("2026-08-27T07:00:00.000Z") }),
+    false
+  );
+  assert.match(exact.html, /2 hours/);
+  assert.doesNotMatch(exact.html, /2 hours 0 minutes/);
 });
 
 test("times render in the recipient's own zone", () => {
@@ -60,7 +109,7 @@ test("a missing zone falls back to the app default rather than rendering blank",
 test("attacker-supplied text cannot inject markup into the body", () => {
   const mail = bookingConfirmedMail(
     booking({
-      title: '<script>alert("x")</script>',
+      eventName: '<script>alert("x")</script>',
       hosts: [{ name: `<img src=x onerror='steal()'>`, email: "a@example.com" }],
       location: '"><b>bold</b>',
     }),
@@ -108,7 +157,7 @@ test("a reschedule shows the time it moved away from", () => {
   const mail = bookingRescheduledMail(
     booking({ previousStart: new Date("2026-08-25T09:00:00.000Z"), reason: "Board meeting" })
   );
-  assert.equal(mail.subject, "Moved: Product design review");
+  assert.equal(mail.subject, "Booking moved — Product design review");
   assert.match(mail.html, /Tuesday, 25 August 2026/);
   assert.match(mail.html, /line-through/);
   assert.match(mail.html, /Board meeting/);
@@ -116,7 +165,7 @@ test("a reschedule shows the time it moved away from", () => {
 
 test("a cancellation says the slot is free again, and carries the reason", () => {
   const mail = bookingCancelledMail(booking({ reason: "No longer needed" }), false);
-  assert.equal(mail.subject, "Cancelled: Product design review");
+  assert.equal(mail.subject, "Booking cancelled — Product design review");
   assert.match(mail.html, /free to book again/);
   assert.match(mail.html, /No longer needed/);
   assert.match(mail.text, /No longer needed/);
@@ -126,7 +175,7 @@ test("a host declining reads differently from an attendee cancelling", () => {
   const declined = bookingCancelledMail(booking(), true);
   const cancelled = bookingCancelledMail(booking(), false);
   assert.notEqual(declined.html, cancelled.html);
-  assert.match(declined.html, /make it work<\/h1>/);
+  assert.match(declined.html, /was not approved<\/h1>/);
 });
 
 test("an invite to someone without an account carries the token", () => {

@@ -47,14 +47,16 @@ export function mailRecipients(booking: Booking): Recipient[] {
 
 function mailData(booking: Booking, recipient: Recipient, previousStart?: Date | null): BookingMailData {
   return {
-    title: booking.title,
+    // `booking.title` reads "Intro call between Ada and Grace", which is right
+    // for a calendar entry and wrong for a confirmation addressed to Grace.
+    eventName: booking.eventType?.title ?? booking.title,
+    description: booking.description,
     start: new Date(booking.start),
     end: new Date(booking.end),
     timeZone: recipient.timeZone,
     location: booking.location,
     meetingUrl: booking.meetingUrl ?? null,
     hosts: booking.hosts.map((host) => ({ name: host.name, email: host.email })),
-    attendeeName: booking.attendees[0]?.name ?? recipient.name,
     uid: booking.uid,
     reason: booking.cancellationReason ?? booking.reschedulingReason ?? null,
     previousStart: previousStart ?? null,

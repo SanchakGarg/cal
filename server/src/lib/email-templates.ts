@@ -26,14 +26,19 @@ export interface PersonLike {
 }
 
 export interface BookingMailData {
-  title: string;
+  /**
+   * The event as the customer chose it — "Intro call" — rather than the internal
+   * booking title, which reads "Intro call between Ada and Grace".
+   */
+  eventName: string;
+  /** The event type's own description, if the host wrote one. */
+  description?: string | null;
   start: Date;
   end: Date;
   timeZone: string;
   location?: string | null;
   meetingUrl?: string | null;
   hosts: PersonLike[];
-  attendeeName: string;
   uid: string;
   reason?: string | null;
   previousStart?: Date | null;
@@ -101,28 +106,56 @@ function shell(options: {
 </html>`;
 }
 
-/** The when/who/where block shared by all booking mails. */
+/** Whole minutes between the two ends of the booking. */
+function durationLabel(data: BookingMailData): string {
+  const minutes = Math.round((data.end.getTime() - data.start.getTime()) / 60000);
+  if (minutes < 60) return `${minutes} minutes`;
+  const hours = Math.floor(minutes / 60);
+  const rest = minutes % 60;
+  const hourPart = `${hours} hour${hours === 1 ? "" : "s"}`;
+  return rest === 0 ? hourPart : `${hourPart} ${rest} minutes`;
+}
+
+/**
+ * The details block, written for the person who did the booking. It carries what
+ * they need to turn up and nothing about how the booking is hosted — no team or
+ * organisation name, no event-type mechanics, no host email addresses.
+ */
 function detailRows(data: BookingMailData): string {
   const zone = data.timeZone || DEFAULT_TIME_ZONE;
   const rows: Array<[string, string]> = [
-    ["What", esc(data.title)],
-    ["When", `${esc(longDate(data.start, zone))}<br />${esc(timeRange(data))} <span style="color:${MUTED};">(${esc(zone)})</span>`],
+    ["Event", esc(data.eventName)],
+    [
+      "When",
+      `${esc(longDate(data.start, zone))}<br />${esc(timeRange(data))} <span style="color:${MUTED};">(${esc(zone)})</span>`,
+    ],
+    ["Duration", esc(durationLabel(data))],
   ];
   if (data.hosts.length > 0) {
-    rows.push(["Who", data.hosts.map((host) => esc(host.name)).join(", ")]);
+    rows.push([data.hosts.length === 1 ? "With" : "Hosts", data.hosts.map((host) => esc(host.name)).join(", ")]);
   }
   if (data.location) rows.push(["Where", esc(data.location)]);
+  // A reference is what a customer quotes back when they write in about it.
+  rows.push(["Reference", `<span style="font-family:ui-monospace,monospace;">${esc(data.uid)}</span>`]);
 
   return `<table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;margin:18px 0;border-top:1px solid ${LINE};border-bottom:1px solid ${LINE};">
     ${rows
       .map(
         ([label, value]) => `<tr>
-      <td style="padding:10px 12px 10px 0;font-size:13px;color:${MUTED};vertical-align:top;width:70px;">${label}</td>
+      <td style="padding:10px 12px 10px 0;font-size:13px;color:${MUTED};vertical-align:top;width:82px;">${label}</td>
       <td style="padding:10px 0;font-size:14px;color:${INK};font-weight:500;">${value}</td>
     </tr>`
       )
       .join("")}
   </table>`;
+}
+
+/** The host's description of the event, when there is one. */
+function descriptionBlock(data: BookingMailData): string {
+  if (!data.description) return "";
+  return `<div style="margin:0 0 18px;padding:14px;border-radius:10px;background:${PAPER};font-size:14px;line-height:1.6;color:${INK};">${esc(
+    data.description
+  )}</div>`;
 }
 
 function button(href: string, label: string): string {
@@ -134,43 +167,62 @@ function button(href: string, label: string): string {
 function textDetails(data: BookingMailData): string {
   const zone = data.timeZone || DEFAULT_TIME_ZONE;
   const lines = [
-    `What:  ${data.title}`,
-    `When:  ${longDate(data.start, zone)}, ${timeRange(data)} (${zone})`,
+    `Event:     ${data.eventName}`,
+    `When:      ${longDate(data.start, zone)}, ${timeRange(data)} (${zone})`,
+    `Duration:  ${durationLabel(data)}`,
   ];
-  if (data.hosts.length > 0) lines.push(`Who:   ${data.hosts.map((host) => host.name).join(", ")}`);
-  if (data.location) lines.push(`Where: ${data.location}`);
+  if (data.hosts.length > 0) {
+    lines.push(`With:      ${data.hosts.map((host) => host.name).join(", ")}`);
+  }
+  if (data.location) lines.push(`Where:     ${data.location}`);
+  lines.push(`Reference: ${data.uid}`);
   return lines.join("\n");
 }
 
 const bookingUrl = (uid: string): string => `${env.webOrigin}/booking/${uid}`;
 
-/** A new booking is on the calendar. */
+/**
+ * Confirmation of a booking, addressed to the person who made it. States what it
+ * is in the first line, then the details — no greeting, and nothing about who
+ * else was notified.
+ */
 export function bookingConfirmedMail(data: BookingMailData, pending: boolean): Omit<Mail, "to"> {
-  const heading = pending ? "Almost there — awaiting confirmation" : "You're booked in";
+  const heading = pending ? "We have received your booking request" : "Your booking is confirmed";
   const opener = pending
-    ? `Thanks ${esc(data.attendeeName)}! We've asked the host to confirm. We'll email you the moment they do.`
-    : `Thanks ${esc(data.attendeeName)}! It's on the calendar and everyone has been told.`;
+    ? "This is confirmation that your booking request has been received. It needs to be approved before it is final, and you will get a further email once it is."
+    : "This is confirmation of your booking. The details are below.";
 
   return {
-    subject: pending ? `Requested: ${data.title}` : `Confirmed: ${data.title}`,
+    subject: pending
+      ? `Booking request received — ${data.eventName}`
+      : `Booking confirmed — ${data.eventName}`,
     html: shell({
       heading,
-      preheader: `${longDate(data.start, data.timeZone || DEFAULT_TIME_ZONE)} at ${timeRange(data)}`,
+      preheader: `${longDate(data.start, data.timeZone || DEFAULT_TIME_ZONE)}, ${timeRange(data)}`,
       accent: pending ? "#f59e0b" : "#10b981",
       emoji: pending ? "🌱" : "🎉",
-      body: `<p style="margin:0;font-size:14px;line-height:1.6;color:${MUTED};">${opener}</p>
+      body: `<p style="margin:0 0 4px;font-size:14px;line-height:1.6;color:${MUTED};">${opener}</p>
         ${detailRows(data)}
-        ${data.meetingUrl ? `<p style="margin:0 0 18px;font-size:14px;">Join here: <a href="${esc(data.meetingUrl)}" style="color:${INK};">${esc(data.meetingUrl)}</a></p>` : ""}
-        ${button(bookingUrl(data.uid), "View or reschedule")}
-        <p style="margin:18px 0 0;font-size:12px;color:${MUTED};">Plans change — you can reschedule or cancel from that link any time.</p>`,
+        ${descriptionBlock(data)}
+        ${
+          data.meetingUrl && !pending
+            ? `<p style="margin:0 0 18px;font-size:14px;">Join here: <a href="${esc(data.meetingUrl)}" style="color:${INK};">${esc(
+                data.meetingUrl
+              )}</a></p>`
+            : ""
+        }
+        ${button(bookingUrl(data.uid), "View, reschedule or cancel")}
+        <p style="margin:18px 0 0;font-size:12px;color:${MUTED};">Use that link if you need to change or cancel this booking.</p>`,
     }),
     text: `${heading}
 
-Thanks ${data.attendeeName}!${pending ? " We've asked the host to confirm." : " It's on the calendar."}
+${opener}
 
 ${textDetails(data)}
-${data.meetingUrl ? `\nJoin: ${data.meetingUrl}\n` : ""}
-View or reschedule: ${bookingUrl(data.uid)}`,
+${data.description ? `\n${data.description}\n` : ""}${
+      data.meetingUrl && !pending ? `\nJoin: ${data.meetingUrl}\n` : ""
+    }
+View, reschedule or cancel: ${bookingUrl(data.uid)}`,
   };
 }
 
@@ -184,49 +236,53 @@ export function bookingRescheduledMail(data: BookingMailData): Omit<Mail, "to"> 
     : "";
 
   return {
-    subject: `Moved: ${data.title}`,
+    subject: `Booking moved — ${data.eventName}`,
     html: shell({
-      heading: "New time, same meeting",
-      preheader: `Now ${longDate(data.start, zone)} at ${timeRange(data)}`,
+      heading: "Your booking has been moved",
+      preheader: `Now ${longDate(data.start, zone)}, ${timeRange(data)}`,
       accent: "#3b82f6",
       emoji: "🕰️",
-      body: `<p style="margin:0;font-size:14px;line-height:1.6;color:${MUTED};">This meeting has been moved. Here's where it landed.</p>
+      body: `<p style="margin:0 0 8px;font-size:14px;line-height:1.6;color:${MUTED};">This booking has moved to a new time. The updated details are below.</p>
         ${was}
         ${detailRows(data)}
         ${data.reason ? `<p style="margin:0 0 18px;font-size:14px;color:${MUTED};">Reason: ${esc(data.reason)}</p>` : ""}
         ${button(bookingUrl(data.uid), "View the new time")}`,
     }),
-    text: `New time, same meeting
+    text: `Your booking has been moved
 
-${data.previousStart ? `Was: ${longDate(data.previousStart, zone)}, ${clock(data.previousStart, zone)}\n` : ""}
+This booking has moved to a new time. The updated details are below.
+${data.previousStart ? `\nPrevious time: ${longDate(data.previousStart, zone)}, ${clock(data.previousStart, zone)}\n` : ""}
 ${textDetails(data)}
 ${data.reason ? `\nReason: ${data.reason}\n` : ""}
-View: ${bookingUrl(data.uid)}`,
+View the new time: ${bookingUrl(data.uid)}`,
   };
 }
 
 /** The booking is off. */
 export function bookingCancelledMail(data: BookingMailData, declined: boolean): Omit<Mail, "to"> {
-  const heading = declined ? "The host couldn't make it work" : "This meeting is cancelled";
+  const heading = declined ? "Your booking was not approved" : "Your booking is cancelled";
+  const opener = declined
+    ? "This booking could not be approved, so it will not go ahead. The time is free to book again."
+    : "This booking has been cancelled and will not go ahead. The time is free to book again.";
   return {
-    subject: `Cancelled: ${data.title}`,
+    subject: `Booking cancelled — ${data.eventName}`,
     html: shell({
       heading,
-      preheader: `${longDate(data.start, data.timeZone || DEFAULT_TIME_ZONE)} is no longer happening`,
+      preheader: `${longDate(data.start, data.timeZone || DEFAULT_TIME_ZONE)} is no longer going ahead`,
       accent: "#ef4444",
       emoji: "🍂",
-      body: `<p style="margin:0;font-size:14px;line-height:1.6;color:${MUTED};">The time has been released, so the slot is free to book again.</p>
+      body: `<p style="margin:0 0 4px;font-size:14px;line-height:1.6;color:${MUTED};">${opener}</p>
         ${detailRows(data)}
         ${data.reason ? `<p style="margin:0 0 18px;font-size:14px;color:${MUTED};">Reason: ${esc(data.reason)}</p>` : ""}
-        ${button(env.webOrigin, "Find another time")}`,
+        ${button(env.webOrigin, "Book another time")}`,
     }),
     text: `${heading}
 
-The time has been released, so the slot is free to book again.
+${opener}
 
 ${textDetails(data)}
 ${data.reason ? `\nReason: ${data.reason}\n` : ""}
-Find another time: ${env.webOrigin}`,
+Book another time: ${env.webOrigin}`,
   };
 }
 
