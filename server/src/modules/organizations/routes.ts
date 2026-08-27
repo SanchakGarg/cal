@@ -40,6 +40,7 @@ import {
   updateSchedule,
 } from "../schedules/repo.ts";
 import { parseAvailability, parseOverrides } from "../schedules/routes.ts";
+import { DEFAULT_TIME_ZONE } from "../../lib/tz.ts";
 
 const ROLES = ["OWNER", "ADMIN", "MEMBER"] as const;
 const OOO_REASONS = ["unspecified", "vacation", "travel", "sick", "public_holiday"] as const;
@@ -473,7 +474,7 @@ organizationsRouter.post(
     const overrides = body.overrides === undefined ? undefined : array(body, "overrides");
     const scheduleId = await createSchedule(userId, {
       name: str(body, "name", { max: 120 }),
-      timeZone: optTimeZone(body, "timeZone") ?? "Europe/London",
+      timeZone: optTimeZone(body, "timeZone") ?? DEFAULT_TIME_ZONE,
       isDefault: optBool(body, "isDefault") ?? false,
       availability: availability ? parseAvailability(availability) : undefined,
       overrides: overrides ? parseOverrides(overrides) : undefined,

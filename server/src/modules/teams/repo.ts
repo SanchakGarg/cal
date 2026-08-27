@@ -8,6 +8,7 @@ import {
   serializeMembership,
   serializeTeam,
 } from "../serialize.ts";
+import { DEFAULT_TIME_ZONE } from "../../lib/tz.ts";
 
 export const TEAM_COLUMNS = `
   id, parent_id, name, slug, logo_url, banner_url, bio, hide_branding, is_organization,
@@ -56,7 +57,7 @@ export async function createTeam(
                           is_private, hide_branding, hide_book_a_team_member, theme, brand_color,
                           dark_brand_color, time_zone, week_start, time_format, metadata)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13,
-               COALESCE($14, 'Europe/London'), COALESCE($15, 'Monday'), COALESCE($16, 12), $17::jsonb)
+               COALESCE($14, $18::text), COALESCE($15, 'Monday'), COALESCE($16, 12), $17::jsonb)
        RETURNING ${TEAM_COLUMNS}`,
       [
         input.name,
@@ -76,6 +77,7 @@ export async function createTeam(
         input.weekStart ?? null,
         input.timeFormat ?? null,
         JSON.stringify(input.metadata ?? {}),
+        DEFAULT_TIME_ZONE,
       ]
     );
 

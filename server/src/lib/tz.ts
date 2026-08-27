@@ -1,6 +1,13 @@
 // Timezone math without any dependency. Everything leans on Intl.DateTimeFormat,
 // which knows the IANA database, so DST is handled by the platform.
 
+/**
+ * The zone used whenever we have to store one but nobody told us which — new
+ * accounts, new schedules, new teams, and requests that omit `timeZone`.
+ * Public booking pages are unaffected: they use the visitor's detected zone.
+ */
+export const DEFAULT_TIME_ZONE = "Asia/Kolkata";
+
 const partsCache = new Map<string, Intl.DateTimeFormat>();
 
 function formatter(timeZone: string): Intl.DateTimeFormat {

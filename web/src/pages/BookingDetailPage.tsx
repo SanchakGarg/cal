@@ -70,6 +70,7 @@ export function BookingDetailPage({ uid }: { uid: string }) {
   const start = new Date(booking.start);
   const end = new Date(booking.end);
   const cancelled = booking.status === "cancelled" || booking.status === "rejected";
+  const noShowAttendees = booking.attendees.filter((attendee) => attendee.absent);
 
   return (
     <div className="cal-booking-detail">
@@ -86,9 +87,33 @@ export function BookingDetailPage({ uid }: { uid: string }) {
         </h1>
         <p className="cal-muted">
           {cancelled
-            ? "The time has been released."
+            ? "The time has been released, so it is bookable again."
             : "We sent the details to everyone on the invite."}
         </p>
+
+        <div className="cal-booking-detail__status">
+          {cancelled ? (
+            <Badge tone="error" startIcon="x">
+              {booking.status === "rejected" ? "Declined" : "Cancelled"}
+            </Badge>
+          ) : booking.status === "pending" ? (
+            <Badge tone="attention" startIcon="clock">
+              Awaiting approval
+            </Badge>
+          ) : (
+            <Badge tone="success" startIcon="check">
+              Confirmed
+            </Badge>
+          )}
+          {booking.absentHost ? <Badge tone="error">Host did not attend</Badge> : null}
+          {noShowAttendees.length > 0 ? (
+            <Badge tone="error">
+              {noShowAttendees.length === 1
+                ? `${noShowAttendees[0].name} did not attend`
+                : `${noShowAttendees.length} attendees did not attend`}
+            </Badge>
+          ) : null}
+        </div>
 
         <dl className="cal-booking-detail__rows">
           <div>
@@ -109,11 +134,13 @@ export function BookingDetailPage({ uid }: { uid: string }) {
               {booking.hosts.map((host) => (
                 <span key={host.id} className="cal-booking-detail__person">
                   {host.name} <span className="cal-muted">{host.email}</span> <Badge>Host</Badge>
+                  {booking.absentHost ? <Badge tone="error">Did not attend</Badge> : null}
                 </span>
               ))}
               {booking.attendees.map((attendee) => (
                 <span key={attendee.email} className="cal-booking-detail__person">
                   {attendee.name} <span className="cal-muted">{attendee.email}</span>
+                  {attendee.absent ? <Badge tone="error">Did not attend</Badge> : null}
                 </span>
               ))}
               {booking.guests.map((guest) => (
@@ -132,7 +159,12 @@ export function BookingDetailPage({ uid }: { uid: string }) {
           {booking.cancellationReason ? (
             <div>
               <dt>Reason</dt>
-              <dd>{booking.cancellationReason}</dd>
+              <dd>
+                {booking.cancellationReason}
+                {booking.cancelledByEmail ? (
+                  <span className="cal-muted">Cancelled by {booking.cancelledByEmail}</span>
+                ) : null}
+              </dd>
             </div>
           ) : null}
         </dl>

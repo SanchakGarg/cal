@@ -38,6 +38,29 @@ const HOUR_HEIGHT = 48;
 const WEEKDAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 /** Stable per-event-type colour so the same meeting reads the same all week. */
+/**
+ * Full detail for a calendar block, so a 15-minute meeting that can only show
+ * its title still answers "what is this?" on hover.
+ */
+function eventTooltip(booking: Booking, timeZone: string, timeFormat: 12 | 24): string {
+  const start = formatTime(new Date(booking.start), timeZone, timeFormat);
+  const end = formatTime(new Date(booking.end), timeZone, timeFormat);
+  const lines = [`${start} – ${end}  ${booking.title}`];
+  const people = [
+    ...booking.hosts.map((host) => `${host.name} (host)`),
+    ...booking.attendees.map((attendee) => attendee.name),
+  ];
+  if (people.length > 0) lines.push(people.join(", "));
+  if (booking.location) lines.push(booking.location);
+  if (booking.status === "cancelled") lines.push("Cancelled");
+  if (booking.status === "rejected") lines.push("Declined");
+  if (booking.status === "pending") lines.push("Awaiting confirmation");
+  if (booking.absentHost) lines.push("Host marked absent");
+  const noShows = booking.attendees.filter((attendee) => attendee.absent).map((attendee) => attendee.name);
+  if (noShows.length > 0) lines.push(`No-show: ${noShows.join(", ")}`);
+  return lines.join("\n");
+}
+
 function hueFor(booking: Booking): number {
   const seed = booking.eventTypeId ?? hashString(booking.title);
   return (seed * 47) % 360;
@@ -363,26 +386,37 @@ function TimeGrid({ days, bookings, timeZone, timeFormat, onOpen }: GridProps) {
                   <div key={hour} className="cal-calendar__hourline" style={{ height: HOUR_HEIGHT }} />
                 ))}
                 {dateISO === todayLocal ? <NowLine timeZone={timeZone} /> : null}
-                {laidOut.map(({ booking, top, height, column, columns }) => (
-                  <button
-                    key={`${booking.uid}-${dateISO}`}
-                    type="button"
-                    className={`cal-event ${booking.status === "cancelled" || booking.status === "rejected" ? "is-cancelled" : ""}`}
-                    style={{
-                      top: `${top}px`,
-                      height: `${Math.max(height, 18)}px`,
-                      left: `calc(${(column / columns) * 100}% + 2px)`,
-                      width: `calc(${(1 / columns) * 100}% - 6px)`,
-                      "--cal-event-hue": hueFor(booking),
-                    } as React.CSSProperties}
-                    onClick={() => onOpen(booking.uid)}
-                  >
-                    <span className="cal-event__time">
-                      {formatTime(new Date(booking.start), timeZone, timeFormat)}
-                    </span>
-                    <span className="cal-event__title">{booking.title}</span>
-                  </button>
-                ))}
+                {laidOut.map(({ booking, top, height, column, columns }) => {
+                  const boxHeight = Math.max(height, 18);
+                  // A 30-minute booking is only 24px tall, which cannot hold a
+                  // stacked time and title. Short blocks lay out on one line,
+                  // and the very shortest drop the time and keep the title —
+                  // the position in the grid already says when it is.
+                  const density = boxHeight < 26 ? "tiny" : boxHeight < 40 ? "compact" : "full";
+                  return (
+                    <button
+                      key={`${booking.uid}-${dateISO}`}
+                      type="button"
+                      className={`cal-event cal-event--${density} ${
+                        booking.status === "cancelled" || booking.status === "rejected" ? "is-cancelled" : ""
+                      }`}
+                      style={{
+                        top: `${top}px`,
+                        height: `${boxHeight}px`,
+                        left: `calc(${(column / columns) * 100}% + 2px)`,
+                        width: `calc(${(1 / columns) * 100}% - 6px)`,
+                        "--cal-event-hue": hueFor(booking),
+                      } as React.CSSProperties}
+                      title={eventTooltip(booking, timeZone, timeFormat)}
+                      onClick={() => onOpen(booking.uid)}
+                    >
+                      <span className="cal-event__time">
+                        {formatTime(new Date(booking.start), timeZone, timeFormat)}
+                      </span>
+                      <span className="cal-event__title">{booking.title}</span>
+                    </button>
+                  );
+                })}
               </div>
             );
           })}

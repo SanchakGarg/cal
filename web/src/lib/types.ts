@@ -143,7 +143,9 @@ export interface Booking {
   hosts: Array<{ id: number; name: string; email: string; username: string; timeZone: string }>;
   status: "accepted" | "pending" | "cancelled" | "rejected";
   cancellationReason?: string;
+  cancelledByEmail?: string;
   reschedulingReason?: string;
+  rescheduledByEmail?: string;
   rescheduledFromUid?: string;
   rescheduledToUid?: string;
   recurringEventUid?: string;

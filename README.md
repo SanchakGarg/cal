@@ -134,6 +134,8 @@ against the API, TLS/reverse-proxy setup and the Zitadel wiring.
 | `GOOGLE_CALENDAR_ENABLED` | turns calendar linking (Settings → Calendars, `/v2/calendars/*`) on or off, independently of the login button |
 | `GOOGLE_CREATE_MEET_LINKS` | ask Google for a Meet link on synced events that have no location of their own |
 | `AUTH_GUEST_ENABLED`, `GUEST_AUTO_CREATE` | guest login for local testing |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS` | SMTP transport. Leave `SMTP_HOST` empty to run without mail — messages are logged instead of sent |
+| `MAIL_FROM` | `From` header on outgoing mail, e.g. `Cal <no-reply@example.com>` |
 | `EXPOSE_VERIFICATION_CODES` | returns booker email codes in the API response — local only, it defeats the check |
 | `ALLOW_PRIVATE_WEBHOOK_TARGETS` | allows webhook URLs pointing at private/loopback addresses |
 | `NODE_ENV` | `production` returns generic 5xx bodies and requires an explicit `JWT_SECRET` |

@@ -36,6 +36,7 @@ import {
   setBookingStatus,
   updateBookingLocation,
 } from "./service.ts";
+import { DEFAULT_TIME_ZONE } from "../../lib/tz.ts";
 
 const BOOKING_COLUMNS = `
   id, uid, event_type_id, user_id, title, description, start_time, end_time, status, location,
@@ -48,7 +49,7 @@ function parseAttendee(raw: unknown): AttendeeInput {
   return {
     name: str(attendee, "name", { max: 120 }),
     email: str(attendee, "email", { max: 200 }),
-    timeZone: optTimeZone(attendee, "timeZone") ?? "UTC",
+    timeZone: optTimeZone(attendee, "timeZone") ?? DEFAULT_TIME_ZONE,
     language: optStr(attendee, "language", { max: 10 }),
     phoneNumber: optStr(attendee, "phoneNumber", { max: 40 }),
   };

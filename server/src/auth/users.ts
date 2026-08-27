@@ -1,6 +1,9 @@
 import { randomBytes, randomUUID } from "node:crypto";
 import { query, queryOne } from "../db/pool.ts";
 import { slugify } from "../http/validate.ts";
+import { DEFAULT_TIME_ZONE } from "../lib/tz.ts";
+import { welcomeMail } from "../lib/email-templates.ts";
+import { sendMailInBackground } from "../lib/mail.ts";
 
 export interface UserRow {
   id: number;
@@ -66,7 +69,7 @@ export async function createUser(input: CreateUserInput): Promise<UserRow> {
       username,
       input.email,
       input.name ?? username,
-      input.timeZone ?? "Europe/London",
+      input.timeZone ?? DEFAULT_TIME_ZONE,
       input.isGuest ?? false,
       input.oidcSubject ?? null,
       input.googleSubject ?? null,
@@ -112,4 +115,11 @@ export async function createDefaultEventTypes(userId: number, scheduleId: number
 export async function bootstrapNewUser(user: UserRow, timeZone: string): Promise<void> {
   const scheduleId = await createDefaultSchedule(user.id, timeZone);
   await createDefaultEventTypes(user.id, scheduleId);
+  // Guests get a generated address they cannot read, so they get no mail.
+  if (!user.is_guest) {
+    sendMailInBackground({
+      to: user.email,
+      ...welcomeMail({ name: user.name, username: user.username }),
+    });
+  }
 }

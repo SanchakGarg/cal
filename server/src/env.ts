@@ -105,9 +105,22 @@ export const env = {
     autoCreate: bool("GUEST_AUTO_CREATE", true),
   },
 
-  // There is no mail transport in this build. Turning this on returns the
-  // verification code in the API response so the flow can be exercised locally —
-  // it defeats email verification, so it must stay off anywhere real.
+  // Mail goes out over SMTP. With no SMTP_HOST the app still works end to end;
+  // messages are logged and dropped instead of sent.
+  smtp: {
+    host: str("SMTP_HOST", ""),
+    port: num("SMTP_PORT", 587),
+    // Port 465 speaks TLS from the first byte. 587 and 25 start in the clear
+    // and upgrade with STARTTLS, which nodemailer does on its own.
+    secure: bool("SMTP_SECURE", num("SMTP_PORT", 587) === 465),
+    user: str("SMTP_USER", ""),
+    pass: str("SMTP_PASS", ""),
+    from: str("MAIL_FROM", "Cal <no-reply@localhost>"),
+  },
+
+  // Returns the verification code in the API response so the flow can be
+  // exercised without a mail server — it defeats email verification, so it must
+  // stay off anywhere real.
   exposeVerificationCodes: bool("EXPOSE_VERIFICATION_CODES", false),
 
   // Webhook subscriber URLs are user-supplied and fetched by the server, so

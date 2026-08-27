@@ -13,15 +13,18 @@ export type WeekDayName = (typeof WEEK_DAYS)[number];
 
 const pad = (value: number): string => String(value).padStart(2, "0");
 
+/** Falls back to the app default when the browser will not say where it is. */
+export const DEFAULT_TIME_ZONE = "Asia/Kolkata";
+
 export function browserTimeZone(): string {
-  return Intl.DateTimeFormat().resolvedOptions().timeZone ?? "UTC";
+  return Intl.DateTimeFormat().resolvedOptions().timeZone ?? DEFAULT_TIME_ZONE;
 }
 
 export function timeZoneList(): string[] {
   const supported = (Intl as unknown as { supportedValuesOf?: (key: string) => string[] })
     .supportedValuesOf;
   if (typeof supported === "function") return supported("timeZone");
-  return ["UTC", "Europe/London", "America/New_York", "Asia/Kolkata", "Australia/Sydney"];
+  return [DEFAULT_TIME_ZONE, "UTC", "Europe/London", "America/New_York", "Australia/Sydney"];
 }
 
 export function zonedParts(instant: Date, timeZone: string) {

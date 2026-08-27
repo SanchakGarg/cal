@@ -108,6 +108,7 @@ export function BookingsPage({ status }: { status: BookingStatus }) {
                       {booking.status === "cancelled" ? <Badge tone="error">Cancelled</Badge> : null}
                       {booking.status === "rejected" ? <Badge tone="error">Rejected</Badge> : null}
                       {booking.recurringEventUid ? <Badge startIcon="refresh">Recurring</Badge> : null}
+                      {booking.absentHost ? <Badge tone="error">Host absent</Badge> : null}
                     </div>
                     {attendee ? (
                       <div className="cal-row cal-booking__attendee">
@@ -115,6 +116,7 @@ export function BookingsPage({ status }: { status: BookingStatus }) {
                         <span className="cal-hint">
                           {attendee.name} · {attendee.email}
                         </span>
+                        {attendee.absent ? <Badge tone="error">No-show</Badge> : null}
                       </div>
                     ) : null}
                     {booking.location ? <p className="cal-hint">{booking.location}</p> : null}

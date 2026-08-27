@@ -40,6 +40,7 @@ import {
   updateMembership,
   updateTeam,
 } from "./repo.ts";
+import { notifyTeamInvites } from "./notify.ts";
 
 const ROLES = ["OWNER", "ADMIN", "MEMBER"] as const;
 
@@ -255,7 +256,9 @@ teamsRouter.post(
       assertMayAssignRole(actorRole, role);
       return { email: str(item, "email", { max: 200 }), role };
     });
-    ok(res, await inviteToTeam(teamId, invites), 201);
+    const outcomes = await inviteToTeam(teamId, invites);
+    await notifyTeamInvites(teamId, currentUser(req), outcomes);
+    ok(res, outcomes, 201);
   })
 );
 

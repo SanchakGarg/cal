@@ -25,14 +25,27 @@ export function Dialog({ open, onClose, title, description, children, footer, wi
   const restoreFocusTo = useRef<HTMLElement | null>(null);
   const [closing, setClosing] = useState(false);
 
+  // Callers pass `onClose` as an inline arrow, so it is a new function on every
+  // render. Reading it through a ref keeps `requestClose` — and therefore the
+  // focus-trap effect below — stable; depending on it directly tore the effect
+  // down and re-ran it on every keystroke, which stole focus back to the close
+  // button after each letter typed into a field.
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
+
   // Animate out before unmounting so the dialog does not disappear abruptly.
+  const closeTimer = useRef<number | undefined>(undefined);
   const requestClose = useCallback(() => {
     setClosing(true);
-    window.setTimeout(() => {
+    closeTimer.current = window.setTimeout(() => {
       setClosing(false);
-      onClose();
+      onCloseRef.current();
     }, 140);
-  }, [onClose]);
+  }, []);
+
+  useEffect(() => () => window.clearTimeout(closeTimer.current), []);
 
   useEffect(() => {
     if (!open) return;
@@ -67,8 +80,15 @@ export function Dialog({ open, onClose, title, description, children, footer, wi
     document.body.style.overflow = "hidden";
 
     const focusTimer = window.setTimeout(() => {
-      const target = panelRef.current?.querySelector<HTMLElement>(FOCUSABLE);
-      target?.focus();
+      const panel = panelRef.current;
+      if (!panel) return;
+      // Prefer the first field, then the footer's leading (safe) action. The
+      // close button is first in the panel but the least useful landing spot.
+      const scope =
+        panel.querySelector<HTMLElement>(".cal-dialog__body") ??
+        panel.querySelector<HTMLElement>(".cal-dialog__footer") ??
+        panel;
+      scope.querySelector<HTMLElement>(FOCUSABLE)?.focus();
     }, 20);
 
     return () => {

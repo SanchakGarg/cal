@@ -158,20 +158,51 @@
   background: hsl(var(--cal-event-hue) 70% 90%);
 }
 
+/* The hue identifies the event type; the lightness has to follow the theme, or
+   a pastel block lands on a near-black page. */
+[data-theme="dark"] .cal-event {
+  border-color: hsl(var(--cal-event-hue) 30% 32%);
+  border-left-color: hsl(var(--cal-event-hue) 55% 55%);
+  background: hsl(var(--cal-event-hue) 28% 18%);
+  color: hsl(var(--cal-event-hue) 45% 88%);
+}
+
+[data-theme="dark"] .cal-event:hover {
+  background: hsl(var(--cal-event-hue) 30% 23%);
+}
+
 .cal-event__time {
   font-variant-numeric: tabular-nums;
   opacity: 0.8;
+  flex: none;
 }
 
 .cal-event__title {
-  font-weight: 600;
+  font-weight: var(--cal-weight-semibold);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
+/* Short blocks: one line instead of two, so the title is never clipped away. */
+.cal-event--compact,
+.cal-event--tiny {
+  flex-direction: row;
+  align-items: center;
+  gap: 4px;
+  padding: 0 5px;
+  line-height: 1.1;
+}
+
+/* At this height only one thing fits, and the title carries more than the time
+   does — the block's position in the grid already shows when it is. */
+.cal-event--tiny .cal-event__time {
+  display: none;
+}
+
 .cal-event.is-cancelled {
-  opacity: 0.55;
+  opacity: 0.6;
+  border-left-style: dashed;
 }
 
 .cal-event.is-cancelled .cal-event__title {

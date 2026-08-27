@@ -6,6 +6,12 @@ import { type Tx, query, queryOne, withTransaction } from "../../db/pool.ts";
 import { badRequest, conflict, forbidden, notFound } from "../../http/errors.ts";
 import { isSlotBookable } from "../../lib/slots.ts";
 import { dispatchWebhooks } from "../../lib/webhooks.ts";
+import {
+  notifyBookingCancelled,
+  notifyBookingCreated,
+  notifyBookingDecision,
+  notifyBookingRescheduled,
+} from "./notify.ts";
 import { invalidateBusyCache, syncBookingToCalendars } from "../../lib/calendar-sync.ts";
 import { addDaysISO } from "../../lib/tz.ts";
 import {
@@ -494,6 +500,7 @@ export async function createBooking(input: CreateBookingInput) {
   invalidateBusyCache();
   // The Meet link is only known after the event is created, so re-read.
   const synced = await Promise.all(created.map(loadBooking));
+  for (const booking of synced) notifyBookingCreated(booking);
   return synced.length === 1 ? synced[0] : synced;
 }
 
@@ -609,6 +616,7 @@ export async function cancelBooking(
     { userId: eventType?.owner_id, teamId: eventType?.team_id, eventTypeId: eventType?.id },
     result
   );
+  notifyBookingCancelled(result);
   return result;
 }
 
@@ -640,6 +648,7 @@ export async function setBookingStatus(
     { userId: eventType?.owner_id, teamId: eventType?.team_id, eventTypeId: eventType?.id },
     result
   );
+  notifyBookingDecision(result, status === "accepted");
   return result;
 }
 
@@ -750,6 +759,7 @@ export async function rescheduleBooking(
     { userId: eventType.owner_id, teamId: eventType.team_id, eventTypeId: eventType.id },
     result
   );
+  notifyBookingRescheduled(result, booking.start_time);
   return result;
 }
 

@@ -42,6 +42,7 @@ import {
 } from "../../auth/users.ts";
 import { requireAuth, currentUser } from "../../auth/middleware.ts";
 import { rateLimit } from "../../http/rate-limit.ts";
+import { DEFAULT_TIME_ZONE } from "../../lib/tz.ts";
 
 // Guest login and refresh both mint sessions, so they are worth throttling even
 // in a single-tenant deployment.
@@ -162,7 +163,7 @@ authRouter.get(
           user.id,
         ]);
       } else {
-        const timeZone = profile.zoneinfo ?? "Europe/London";
+        const timeZone = profile.zoneinfo ?? DEFAULT_TIME_ZONE;
         user = await createUser({
           email: profile.email,
           name: profile.name,
@@ -262,7 +263,7 @@ authRouter.get(
           user.id,
         ]);
       } else {
-        const timeZone = "Europe/London";
+        const timeZone = DEFAULT_TIME_ZONE;
         user = await createUser({
           email: profile.email,
           name: profile.name,
@@ -325,7 +326,7 @@ authRouter.post(
     const body = asObject(req.body);
     const name = optStr(body, "name", { max: 80 });
     const email = optStr(body, "email", { max: 200 });
-    const timeZone = optTimeZone(body, "timeZone") ?? "Europe/London";
+    const timeZone = optTimeZone(body, "timeZone") ?? DEFAULT_TIME_ZONE;
 
     const existing: UserRow | null = email ? await findUserByEmail(email) : null;
     if (existing && !existing.is_guest) {

@@ -5,7 +5,7 @@ import { badRequest, conflict, notFound } from "../../http/errors.ts";
 import { handler, ok } from "../../http/respond.ts";
 import { asObject, instant, int, optInt, optStr, paramInt } from "../../http/validate.ts";
 import { optionalAuth } from "../../auth/middleware.ts";
-import { isValidTimeZone } from "../../lib/tz.ts";
+import { DEFAULT_TIME_ZONE, isValidTimeZone } from "../../lib/tz.ts";
 import { generateSlots, groupSlotsByDate } from "../../lib/slots.ts";
 import type { EventTypeRow } from "../serialize.ts";
 import { findPublicEventType } from "../event-types/repo.ts";
@@ -59,7 +59,7 @@ slotsRouter.get(
       teamSlug: optStr(q, "teamSlug"),
     });
 
-    const timeZone = optStr(q, "timeZone") ?? "UTC";
+    const timeZone = optStr(q, "timeZone") ?? DEFAULT_TIME_ZONE;
     if (!isValidTimeZone(timeZone)) throw badRequest("timeZone must be a valid IANA time zone");
 
     const duration = q.duration === undefined ? undefined : paramInt(q.duration, "duration");
