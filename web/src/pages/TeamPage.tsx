@@ -543,6 +543,7 @@ function TeamMembers({
   const [saving, setSaving] = useState(false);
   const [removeTarget, setRemoveTarget] = useState<Membership | null>(null);
   const [search, setSearch] = useState("");
+  const [resending, setResending] = useState<number | null>(null);
 
   const invite = async (): Promise<void> => {
     setSaving(true);
@@ -560,6 +561,20 @@ function TeamMembers({
       toast.error(errorMessage(error));
     } finally {
       setSaving(false);
+    }
+  };
+
+  const resend = async (membership: Membership): Promise<void> => {
+    const email = membership.user?.email;
+    if (!email) return;
+    setResending(membership.id);
+    try {
+      await api.post(`/v2/teams/${teamId}/invite`, { email, role: membership.role });
+      toast.success(`Invitation re-sent to ${email}`);
+    } catch (error) {
+      toast.error(errorMessage(error));
+    } finally {
+      setResending(null);
     }
   };
 
@@ -639,7 +654,7 @@ function TeamMembers({
             <div className="cal-team__what">
               <div className="cal-row">
                 <strong>{membership.user?.name ?? `User ${membership.userId}`}</strong>
-                {membership.accepted ? null : <Badge tone="attention">Pending</Badge>}
+                {membership.accepted ? null : <Badge tone="attention">Invite pending</Badge>}
               </div>
               <p className="cal-hint">
                 {membership.user?.email}
@@ -661,8 +676,13 @@ function TeamMembers({
               />
             </div>
             {membership.accepted ? null : (
-              <Button size="sm" variant="secondary" onClick={() => void patch(membership, { accepted: true })}>
-                Accept
+              <Button
+                size="sm"
+                variant="secondary"
+                loading={resending === membership.id}
+                onClick={() => void resend(membership)}
+              >
+                Resend invite
               </Button>
             )}
             <IconButton

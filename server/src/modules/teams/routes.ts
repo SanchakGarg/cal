@@ -250,7 +250,10 @@ teamsRouter.patch(
       res,
       await updateMembership(teamId, membershipId, {
         role,
-        accepted: optBool(body, "accepted"),
+        // `accepted` is deliberately not settable here. Accepting an invitation
+        // is the invitee's decision, made through /v2/teams/invitations/:id/accept
+        // or an invite token — an admin flipping it would put someone on a team
+        // without their consent.
         disableImpersonation: optBool(body, "disableImpersonation"),
       })
     );

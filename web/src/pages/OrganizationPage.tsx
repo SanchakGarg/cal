@@ -169,7 +169,7 @@ export function OrganizationPage({ tab }: { tab: OrgTab }) {
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div className="cal-row">
                       <strong>{user.name || user.email}</strong>
-                      {user.accepted ? null : <Badge tone="attention">Pending</Badge>}
+                      {user.accepted ? null : <Badge tone="attention">Invite pending</Badge>}
                     </div>
                     <p className="cal-hint">
                       {user.email} · {user.timeZone}
