@@ -209,6 +209,13 @@ function TeamDashboard({
           />
         ) : (
           <List>
+            {upcoming.length > 12 ? (
+              <ListRow>
+                <p className="cal-hint">
+                  Showing the next 12 of {upcoming.length} upcoming bookings.
+                </p>
+              </ListRow>
+            ) : null}
             {upcoming.slice(0, 12).map((booking) => {
               const attendee = booking.attendees[0];
               return (
@@ -535,6 +542,7 @@ function TeamMembers({
   const [role, setRole] = useState<(typeof ROLES)[number]>("MEMBER");
   const [saving, setSaving] = useState(false);
   const [removeTarget, setRemoveTarget] = useState<Membership | null>(null);
+  const [search, setSearch] = useState("");
 
   const invite = async (): Promise<void> => {
     setSaving(true);
@@ -577,6 +585,16 @@ function TeamMembers({
 
   if (!members) return <Skeleton height={180} />;
 
+  const needle = search.trim().toLowerCase();
+  const shown = needle
+    ? members.filter((membership) =>
+        [membership.user?.name, membership.user?.email, membership.user?.username]
+          .filter(Boolean)
+          .some((field) => field!.toLowerCase().includes(needle))
+      )
+    : members;
+  const pending = members.filter((membership) => !membership.accepted).length;
+
   return (
     <div className="cal-stack">
       <div className="cal-row">
@@ -587,8 +605,30 @@ function TeamMembers({
         </Button>
       </div>
 
+      {/* Only worth the row's height once the list is long enough to scroll. */}
+      {members.length > 8 ? (
+        <div className="cal-row">
+          <div style={{ flex: 1, maxWidth: 280 }}>
+            <TextField
+              placeholder="Search members"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+            />
+          </div>
+          <p className="cal-hint">
+            {needle ? `${shown.length} of ${members.length}` : `${members.length} members`}
+            {pending > 0 ? ` · ${pending} pending` : ""}
+          </p>
+        </div>
+      ) : null}
+
       <List>
-        {members.map((membership) => (
+        {shown.length === 0 ? (
+          <ListRow>
+            <p className="cal-hint">No members match "{search}".</p>
+          </ListRow>
+        ) : null}
+        {shown.map((membership) => (
           <ListRow key={membership.id}>
             <Avatar
               name={membership.user?.name ?? "?"}
@@ -679,6 +719,12 @@ function TeamAvailability({ teamId, members }: { teamId: number; members: Member
   const toast = useToast();
   const [rows, setRows] = useState<Array<Schedule & { ownerUsername?: string }> | null>(null);
 
+  // One index instead of a linear scan per schedule row.
+  const membersById = useMemo(
+    () => new Map(members.map((membership) => [membership.userId, membership])),
+    [members]
+  );
+
   useEffect(() => {
     void api
       .get<Array<Schedule & { ownerUsername?: string }>>(`/v2/teams/${teamId}/schedules`)
@@ -705,7 +751,7 @@ function TeamAvailability({ teamId, members }: { teamId: number; members: Member
           </ListRow>
         ) : null}
         {rows.map((schedule) => {
-          const member = members.find((membership) => membership.userId === schedule.ownerId);
+          const member = membersById.get(schedule.ownerId);
           return (
             <ListRow key={`${schedule.ownerId}-${schedule.id}`}>
               <Avatar

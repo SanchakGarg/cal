@@ -10,91 +10,258 @@
 .cal-booking-detail__card {
   width: 100%;
   max-width: 520px;
-  padding: var(--cal-pad-panel-lg);
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  text-align: center;
+  background: var(--cal-bg);
+  border: 1px solid var(--cal-border-subtle);
+  /* Rounder than a standard card: this is the one page a guest may ever see. */
+  border-radius: 20px;
+  box-shadow: var(--cal-shadow-drop);
+  overflow: hidden;
+}
+
+/* The banner carries the outcome, tinted by it, so the state reads before the
+   text does. */
+.cal-booking-detail__banner {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 22px var(--cal-pad-panel-lg);
+  border-bottom: 1px solid var(--cal-border-subtle);
+}
+
+.cal-booking-detail__card.is-confirmed .cal-booking-detail__banner {
+  background: var(--cal-bg-success);
+}
+.cal-booking-detail__card.is-pending .cal-booking-detail__banner {
+  background: var(--cal-bg-attention);
+}
+.cal-booking-detail__card.is-cancelled .cal-booking-detail__banner {
+  background: var(--cal-bg-error);
+}
+
+.cal-booking-detail__banner h1 {
+  margin-top: 2px;
+  font-size: var(--cal-text-xl);
 }
 
 .cal-booking-detail__icon {
-  align-self: center;
+  flex: none;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  background: var(--cal-bg-success);
-  color: var(--cal-text-success);
+  width: 40px;
+  height: 40px;
+  border-radius: var(--cal-radius-full);
+  background: var(--cal-bg);
+  box-shadow: var(--cal-shadow-sm);
 }
 
-.cal-booking-detail__icon.is-cancelled {
-  background: var(--cal-bg-error);
+.cal-booking-detail__card.is-confirmed .cal-booking-detail__icon {
+  color: var(--cal-text-success);
+}
+.cal-booking-detail__card.is-pending .cal-booking-detail__icon {
+  color: var(--cal-text-attention);
+}
+.cal-booking-detail__card.is-cancelled .cal-booking-detail__icon {
   color: var(--cal-text-error);
 }
 
-.cal-booking-detail__status {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 6px;
-  margin-top: 4px;
-}
-
-.cal-booking-detail__rows {
-  margin-top: 12px;
+.cal-booking-detail__body {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 16px 0;
-  border-top: 1px solid var(--cal-border-subtle);
-  border-bottom: 1px solid var(--cal-border-subtle);
-  text-align: left;
+  gap: 18px;
+  padding: var(--cal-pad-panel-lg);
 }
 
-.cal-booking-detail__rows > div {
-  display: grid;
-  grid-template-columns: 80px minmax(0, 1fr);
-  gap: 12px;
-  font-size: var(--cal-text-sm);
+/* When: a torn-off calendar leaf beside the title. The date is what people
+   opened this page to check, so it gets the largest type on the card. */
+.cal-booking-detail__when {
+  display: flex;
+  align-items: center;
+  gap: 16px;
 }
 
-.cal-booking-detail__rows dt {
+.cal-booking-detail__date {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 66px;
+  padding: 8px 0 10px;
+  border: 1px solid var(--cal-border-subtle);
+  border-radius: 14px;
+  background: var(--cal-bg-subtle);
+  line-height: 1.1;
+}
+
+.cal-booking-detail__weekday,
+.cal-booking-detail__month {
+  font-size: var(--cal-text-2xs);
+  font-weight: var(--cal-weight-semibold);
+  letter-spacing: var(--cal-tracking-wide);
+  text-transform: uppercase;
   color: var(--cal-text-subtle);
 }
 
-.cal-booking-detail__rows dd {
+.cal-booking-detail__day {
+  font-family: var(--cal-font-display);
+  font-size: var(--cal-text-4xl);
+  font-weight: var(--cal-weight-bold);
+  letter-spacing: var(--cal-tracking-display);
+  font-variant-numeric: tabular-nums;
   color: var(--cal-text-emphasis);
+}
+
+.cal-booking-detail__when-text {
+  min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
+}
+
+.cal-booking-detail__title {
+  font-family: var(--cal-font-display);
+  font-size: var(--cal-text-lg);
+  font-weight: var(--cal-weight-semibold);
+  letter-spacing: var(--cal-tracking-display);
+  color: var(--cal-text-emphasis);
+}
+
+.cal-booking-detail__full-date {
+  font-size: var(--cal-text-sm);
+  color: var(--cal-text-subtle);
+}
+
+.cal-booking-detail__time {
+  font-size: var(--cal-text-base);
+  font-weight: var(--cal-weight-medium);
+  color: var(--cal-text-emphasis);
+}
+
+.cal-booking-detail__flags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.cal-booking-detail__people {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 0;
+  border-top: 1px solid var(--cal-border-subtle);
+  border-bottom: 1px solid var(--cal-border-subtle);
 }
 
 .cal-booking-detail__person {
   display: flex;
   align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
+  gap: 10px;
+  min-width: 0;
+}
+
+.cal-booking-detail__person-text {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.cal-booking-detail__row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--cal-text-sm);
+  color: var(--cal-text-emphasis);
+}
+
+.cal-booking-detail__row > svg {
+  flex: none;
+  color: var(--cal-text-subtle);
+}
+
+.cal-booking-detail__row a {
+  color: var(--cal-text-emphasis);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.cal-booking-detail__note {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 12px 14px;
+  border-radius: var(--cal-radius-lg);
+  background: var(--cal-bg-subtle);
+  font-size: var(--cal-text-sm);
+}
+
+.cal-booking-detail__footer {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px var(--cal-pad-panel-lg);
+  border-top: 1px solid var(--cal-border-subtle);
+  background: var(--cal-bg-subtle);
 }
 
 .cal-booking-detail__actions {
   display: flex;
-  justify-content: center;
   gap: 8px;
-  margin-top: 12px;
+}
+
+.cal-booking-detail__actions .cal-btn {
+  flex: 1;
 }
 
 .cal-booking-detail__calendar {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 6px;
-  margin-top: 8px;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
-.cal-booking-detail__calendar a {
-  font-size: var(--cal-text-sm);
+.cal-booking-detail__calendar-links {
+  display: flex;
+  gap: 6px;
+}
+
+.cal-booking-detail__calendar-links a {
+  padding: 4px 10px;
+  border: 1px solid var(--cal-border-subtle);
+  border-radius: var(--cal-radius-full);
+  background: var(--cal-bg);
+  font-size: var(--cal-text-xs);
+  font-weight: var(--cal-weight-medium);
   color: var(--cal-text-emphasis);
-  text-decoration: underline;
+  transition: border-color var(--cal-duration-fast) ease, background var(--cal-duration-fast) ease,
+    transform var(--cal-duration-fast) ease;
+}
+
+.cal-booking-detail__calendar-links a:hover {
+  border-color: var(--cal-border-emphasis);
+  background: var(--cal-bg-muted);
+  transform: translateY(-1px);
+}
+
+@media (max-width: 520px) {
+  .cal-booking-detail__banner,
+  .cal-booking-detail__body,
+  .cal-booking-detail__footer {
+    padding-left: var(--cal-pad-panel-sm);
+    padding-right: var(--cal-pad-panel-sm);
+  }
+
+  .cal-booking-detail__actions {
+    flex-direction: column;
+  }
+}
+
+/* Anyone who asked for less motion gets none of the hover lift either. */
+@media (prefers-reduced-motion: reduce) {
+  .cal-booking-detail__calendar-links a:hover {
+    transform: none;
+  }
 }

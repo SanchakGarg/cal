@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { useEffect, useState } from "react";
 import { Icon, type IconName } from "./Icon.tsx";
 import "./Layout.css";
 
@@ -84,10 +85,25 @@ export function Avatar({
   /** Stable identifier for the tint. Defaults to `name`. */
   colorKey?: string;
 }) {
-  if (src) {
+  // Avatar URLs are whatever a person pasted, or a provider link that may have
+  // stopped resolving. A dead one must fall back to initials rather than leave
+  // the browser's broken-image glyph in a list of people.
+  const [failed, setFailed] = useState(false);
+  useEffect(() => setFailed(false), [src]);
+
+  if (src && !failed) {
     return (
       <span className="cal-avatar" style={{ width: size, height: size }}>
-        <img src={src} alt={name} />
+        <img
+          src={src}
+          alt={name}
+          loading="lazy"
+          // Google and several other providers refuse hotlinked avatars when a
+          // referrer is sent, which is the usual reason another person's photo
+          // is the only one missing.
+          referrerPolicy="no-referrer"
+          onError={() => setFailed(true)}
+        />
       </span>
     );
   }

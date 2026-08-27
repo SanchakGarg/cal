@@ -85,6 +85,16 @@
   line-height: 1.2;
 }
 
+/* The host's own words, above the event's description: who you are booking
+   comes before what the meeting is. */
+.cal-booker__bio {
+  font-size: var(--cal-text-sm);
+  line-height: 1.55;
+  color: var(--cal-text);
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--cal-border-subtle);
+}
+
 .cal-booker__desc {
   font-size: var(--cal-text-sm);
   color: var(--cal-text-subtle);

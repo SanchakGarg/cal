@@ -34,6 +34,8 @@ import {
   getMembership,
   getTeam,
   inviteToTeam,
+  listInvitationsForUser,
+  respondToInvitation,
   listMemberships,
   listTeamsForUser,
   removeMembership,
@@ -136,6 +138,31 @@ teamsRouter.post(
   handler(async (req, res) => {
     const body = asObject(req.body);
     ok(res, await acceptInvite(str(body, "token"), currentUser(req).id));
+  })
+);
+
+/** The invitee's own view of invitations waiting on them. */
+teamsRouter.get(
+  "/invitations",
+  handler(async (req, res) => {
+    const user = currentUser(req);
+    ok(res, await listInvitationsForUser(user.id, user.email));
+  })
+);
+
+teamsRouter.post(
+  "/invitations/:membershipId/accept",
+  handler(async (req, res) => {
+    const membershipId = paramInt(req.params.membershipId, "membershipId");
+    ok(res, await respondToInvitation(currentUser(req).id, membershipId, true));
+  })
+);
+
+teamsRouter.post(
+  "/invitations/:membershipId/decline",
+  handler(async (req, res) => {
+    const membershipId = paramInt(req.params.membershipId, "membershipId");
+    ok(res, await respondToInvitation(currentUser(req).id, membershipId, false));
   })
 );
 

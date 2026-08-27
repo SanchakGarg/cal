@@ -43,6 +43,7 @@ export function BookerPage({ username, teamSlug, eventSlug, rescheduleUid }: Boo
   const [eventType, setEventType] = useState<EventType | null>(null);
   const [hostName, setHostName] = useState("");
   const [hostAvatar, setHostAvatar] = useState<string | null>(null);
+  const [hostBio, setHostBio] = useState<string | null>(null);
   const [members, setMembers] = useState<
     Array<{ name: string; avatarUrl?: string | null; colorKey?: string }>
   >([]);
@@ -83,6 +84,7 @@ export function BookerPage({ username, teamSlug, eventSlug, rescheduleUid }: Boo
           setEventType(match);
           setHostName(team.profile.name);
           setHostAvatar(team.profile.logoUrl);
+          setHostBio(team.profile.bio);
           setMembers(
             team.members.map((member) => ({
               name: member.name,
@@ -102,6 +104,7 @@ export function BookerPage({ username, teamSlug, eventSlug, rescheduleUid }: Boo
           setEventType(match);
           setHostName(profile.profile.name);
           setHostAvatar(profile.profile.avatarUrl);
+          setHostBio(profile.profile.bio);
         }
       } catch {
         setNotFound(true);
@@ -266,6 +269,7 @@ export function BookerPage({ username, teamSlug, eventSlug, rescheduleUid }: Boo
             <p className="cal-booker__host">{hostName}</p>
           </div>
           <h1 className="cal-booker__title">{eventType.title}</h1>
+          {hostBio ? <p className="cal-booker__bio">{hostBio}</p> : null}
           {eventType.description ? <p className="cal-booker__desc">{eventType.description}</p> : null}
 
           <ul className="cal-booker__facts">

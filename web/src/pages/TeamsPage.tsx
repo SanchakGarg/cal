@@ -3,7 +3,7 @@ import { Button } from "../ui/Button.tsx";
 import { Avatar, Badge, EmptyState, List, ListRow, PageHeader, SkeletonList } from "../ui/Layout.tsx";
 import { useToast } from "../ui/Toast.tsx";
 import { api, errorMessage } from "../lib/api.ts";
-import type { Team } from "../lib/types.ts";
+import type { Invitation, Team } from "../lib/types.ts";
 import { useRouter } from "../app/router.tsx";
 
 export function TeamsPage() {
@@ -12,18 +12,48 @@ export function TeamsPage() {
 
   const [teams, setTeams] = useState<Team[] | null>(null);
   const [orgs, setOrgs] = useState<Team[]>([]);
+  const [invitations, setInvitations] = useState<Invitation[]>([]);
+  const [responding, setResponding] = useState<number | null>(null);
 
   const load = async (): Promise<void> => {
     try {
-      const [teamList, orgList] = await Promise.all([
+      const [teamList, orgList, inviteList] = await Promise.all([
         api.get<Team[]>("/v2/teams"),
         api.get<Team[]>("/v2/organizations"),
+        api.get<Invitation[]>("/v2/teams/invitations"),
       ]);
       setTeams(teamList);
       setOrgs(orgList);
+      setInvitations(inviteList);
     } catch (error) {
       toast.error(errorMessage(error));
       setTeams([]);
+    }
+  };
+
+  const respond = async (invitation: Invitation, accept: boolean): Promise<void> => {
+    setResponding(invitation.id);
+    try {
+      if (invitation.kind === "token") {
+        if (!accept) {
+          // Declining a token invite just means leaving it to expire; there is
+          // no membership row to remove yet.
+          setInvitations((current) => current.filter((entry) => entry !== invitation));
+          return;
+        }
+        await api.post("/v2/teams/invites/accept", { token: invitation.token });
+      } else {
+        await api.post(
+          `/v2/teams/invitations/${invitation.id}/${accept ? "accept" : "decline"}`,
+          {}
+        );
+      }
+      toast.success(accept ? `You joined ${invitation.teamName}` : "Invitation declined");
+      await load();
+    } catch (error) {
+      toast.error(errorMessage(error));
+    } finally {
+      setResponding(null);
     }
   };
 
@@ -52,6 +82,53 @@ export function TeamsPage() {
           </>
         }
       />
+
+      {invitations.length > 0 ? (
+        <div className="cal-stack" style={{ marginBottom: 20 }}>
+          <p className="cal-section-title">
+            Invitations
+            <Badge tone="attention">{invitations.length}</Badge>
+          </p>
+          <List>
+            {invitations.map((invitation) => (
+              <ListRow key={`${invitation.kind}-${invitation.id}`}>
+                <Avatar
+                  name={invitation.teamName}
+                  size={30}
+                  colorKey={invitation.teamSlug ?? invitation.teamName}
+                />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div className="cal-row">
+                    <strong>{invitation.teamName}</strong>
+                    <Badge>{invitation.role}</Badge>
+                    {invitation.isOrganization ? <Badge tone="info">Organization</Badge> : null}
+                  </div>
+                  <p className="cal-hint">
+                    {invitation.invitedBy
+                      ? `${invitation.invitedBy} invited you to join`
+                      : "You have been invited to join"}
+                  </p>
+                </div>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  disabled={responding === invitation.id}
+                  onClick={() => void respond(invitation, false)}
+                >
+                  Decline
+                </Button>
+                <Button
+                  size="sm"
+                  loading={responding === invitation.id}
+                  onClick={() => void respond(invitation, true)}
+                >
+                  Accept
+                </Button>
+              </ListRow>
+            ))}
+          </List>
+        </div>
+      ) : null}
 
       {orgs.length > 0 ? (
         <div className="cal-stack" style={{ marginBottom: 20 }}>

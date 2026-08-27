@@ -298,6 +298,116 @@ export async function inviteToTeam(
   return results;
 }
 
+export interface PendingInvitation {
+  /** `membership` invites are accepted by id; `token` invites by their token. */
+  kind: "membership" | "token";
+  id: number;
+  token?: string;
+  teamId: number;
+  teamName: string;
+  teamSlug: string | null;
+  isOrganization: boolean;
+  role: string;
+  invitedBy: string | null;
+}
+
+/**
+ * Invitations waiting on this person. Two shapes reach the same place: someone
+ * with an account gets an unaccepted membership row, while an invite sent to an
+ * address with no account yet lives in `team_invites` until it is claimed. Both
+ * are listed so the invitee sees the invitation either way.
+ */
+export async function listInvitationsForUser(
+  userId: number,
+  email: string
+): Promise<PendingInvitation[]> {
+  const [memberships, tokens] = await Promise.all([
+    query<{
+      id: number;
+      team_id: number;
+      name: string;
+      slug: string | null;
+      is_organization: boolean;
+      role: string;
+      invited_by: string | null;
+    }>(
+      `SELECT m.id, m.team_id, t.name, t.slug, t.is_organization, m.role,
+              (SELECT u.name FROM memberships om JOIN users u ON u.id = om.user_id
+                WHERE om.team_id = t.id AND om.role = 'OWNER' AND om.accepted = TRUE
+                ORDER BY om.id LIMIT 1) AS invited_by
+       FROM memberships m JOIN teams t ON t.id = m.team_id
+       WHERE m.user_id = $1 AND m.accepted = FALSE
+       ORDER BY m.id`,
+      [userId]
+    ),
+    query<{
+      id: number;
+      token: string;
+      team_id: number;
+      name: string;
+      slug: string | null;
+      is_organization: boolean;
+      role: string;
+    }>(
+      `SELECT i.id, i.token, i.team_id, t.name, t.slug, t.is_organization, i.role
+       FROM team_invites i JOIN teams t ON t.id = i.team_id
+       WHERE lower(i.email) = lower($1) AND i.accepted_at IS NULL AND i.expires_at > now()
+         -- An invite already superseded by a membership row would show twice.
+         AND NOT EXISTS (SELECT 1 FROM memberships m WHERE m.team_id = i.team_id AND m.user_id = $2)
+       ORDER BY i.id`,
+      [email, userId]
+    ),
+  ]);
+
+  return [
+    ...memberships.map((row) => ({
+      kind: "membership" as const,
+      id: row.id,
+      teamId: row.team_id,
+      teamName: row.name,
+      teamSlug: row.slug,
+      isOrganization: row.is_organization,
+      role: row.role,
+      invitedBy: row.invited_by,
+    })),
+    ...tokens.map((row) => ({
+      kind: "token" as const,
+      id: row.id,
+      token: row.token,
+      teamId: row.team_id,
+      teamName: row.name,
+      teamSlug: row.slug,
+      isOrganization: row.is_organization,
+      role: row.role,
+      invitedBy: null,
+    })),
+  ];
+}
+
+/**
+ * The invitee accepting or declining their own invitation. Deliberately not the
+ * admin membership route: the invitee has no role on the team yet, so there is
+ * nothing to authorise against beyond the row being theirs.
+ */
+export async function respondToInvitation(
+  userId: number,
+  membershipId: number,
+  accept: boolean
+): Promise<{ status: "accepted" | "declined" }> {
+  const row = await queryOne<{ id: number; team_id: number }>(
+    "SELECT id, team_id FROM memberships WHERE id = $1 AND user_id = $2 AND accepted = FALSE",
+    [membershipId, userId]
+  );
+  if (!row) throw notFound("Invitation not found");
+
+  if (!accept) {
+    await query("DELETE FROM memberships WHERE id = $1", [row.id]);
+    return { status: "declined" };
+  }
+  await query("UPDATE memberships SET accepted = TRUE WHERE id = $1", [row.id]);
+  return { status: "accepted" };
+}
+
 export async function acceptInvite(token: string, userId: number) {
   const invite = await queryOne<{ id: number; team_id: number; role: string }>(
     `SELECT id, team_id, role FROM team_invites

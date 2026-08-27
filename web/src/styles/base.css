@@ -109,6 +109,9 @@ textarea {
 }
 
 .cal-section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-size: var(--cal-text-sm);
   font-weight: var(--cal-weight-semibold);
   letter-spacing: var(--cal-tracking-tight);

@@ -164,6 +164,20 @@ export interface Booking {
   bookingFieldsResponses: Record<string, unknown>;
 }
 
+/** A team invitation waiting on the signed-in user. */
+export interface Invitation {
+  /** `membership` invites are answered by id; `token` invites by their token. */
+  kind: "membership" | "token";
+  id: number;
+  token?: string;
+  teamId: number;
+  teamName: string;
+  teamSlug: string | null;
+  isOrganization: boolean;
+  role: string;
+  invitedBy: string | null;
+}
+
 export interface Team {
   id: number;
   parentId: number | null;
