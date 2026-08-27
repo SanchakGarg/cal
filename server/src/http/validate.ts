@@ -189,6 +189,29 @@ export function weekDayName(day: number): WeekDayName {
   return WEEK_DAYS[((day % 7) + 7) % 7];
 }
 
+/** Reads an optional integer out of a query string.
+ *
+ *  Query values always arrive as text, so `optInt` — which insists on a real
+ *  JSON number and is right for request bodies — rejects every one of them.
+ *  An absent or empty parameter reads as "not supplied". */
+export function optQueryInt(
+  query: Json,
+  field: string,
+  opts: { min?: number; max?: number } = {}
+): number | undefined {
+  const raw = query[field];
+  if (raw === undefined || raw === null || raw === "") return undefined;
+  const parsed = Number(raw);
+  if (!Number.isInteger(parsed)) throw badRequest(`${field} must be an integer`);
+  if (opts.min !== undefined && parsed < opts.min) {
+    throw badRequest(`${field} must be at least ${opts.min}`);
+  }
+  if (opts.max !== undefined && parsed > opts.max) {
+    throw badRequest(`${field} must be at most ${opts.max}`);
+  }
+  return parsed;
+}
+
 /** Reads an integer route/query param. */
 export function paramInt(value: unknown, label: string): number {
   const parsed = Number(value);

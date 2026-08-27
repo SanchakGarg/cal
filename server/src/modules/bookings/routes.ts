@@ -9,6 +9,7 @@ import {
   instant,
   optBool,
   optInt,
+  optQueryInt,
   optStr,
   optTimeZone,
   paramInt,
@@ -224,8 +225,8 @@ bookingsRouter.get(
       order.push(status === "past" || status === "cancelled" ? "b.start_time DESC" : "b.start_time ASC");
     }
 
-    const limit = Math.min(optInt(q, "limit", { min: 1, max: 250 }) ?? 100, 250);
-    const cursor = optInt(q, "cursor", { min: 0 });
+    const limit = optQueryInt(q, "limit", { min: 1, max: 250 }) ?? 100;
+    const cursor = optQueryInt(q, "cursor", { min: 0 });
     if (cursor !== undefined) push("b.id > $?", cursor);
 
     const rows = await query<BookingRow>(
